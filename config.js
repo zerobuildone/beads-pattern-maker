@@ -22,5 +22,5 @@ window.AFF_CONFIG = {
 
   // Google Analytics 4 測定ID（例: "G-XXXXXXXXXX"）
   // analytics.google.com でプロパティ作成 → データストリーム追加で発行される。空なら計測なし
-  gaId: "",
+  gaId: "G-L8L3LJ2P45",
 };

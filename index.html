@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L8L3LJ2P45"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-L8L3LJ2P45');
+</script>
 <title>アイロンビーズ図案メーカー｜写真・画像をドット絵図案に無料変換</title>
 <meta name="description" content="画像をドロップするだけでアイロンビーズの図案に自動変換。パーラービーズ・ナノビーズ・ハマ・Artkal対応。実際に売っている色番号で図案化し、必要な色と個数、購入先まで自動でわかる無料ツール。">
 <link rel="canonical" href="https://zerobuildone.github.io/beads-pattern-maker/">
@@ -290,22 +298,6 @@
 
 <script src="palettes.js"></script>
 <script src="config.js"></script>
-<script>
-// アクセス解析（config.jsのgaIdが設定されている時だけ読み込む）
-(function () {
-  var id = window.AFF_CONFIG && window.AFF_CONFIG.gaId;
-  if (!id) return;
-  var s = document.createElement("script");
-  s.async = true;
-  s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
-  document.head.appendChild(s);
-  window.dataLayer = window.dataLayer || [];
-  function gtag() { dataLayer.push(arguments); }
-  window.gtag = gtag;
-  gtag("js", new Date());
-  gtag("config", id);
-})();
-</script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja" data-lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使い方・FAQ｜アイロンビーズ図案メーカー</title>
+<meta name="description" content="アイロンビーズ図案メーカーの使い方、ブランド混合の注意点、よくある質問。パーラービーズ・ハマビーズ・Artkal・ナノビーズ対応の無料図案変換ツール。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="guide-page">
+
+<header class="site-header">
+  <div class="lang-switch">
+    <button type="button" data-lang-btn="ja">日本語</button><button type="button" data-lang-btn="en">English</button>
+  </div>
+  <p class="brand-row"><a class="brand-link" href="./"><span class="pixel-logo" aria-hidden="true"></span><span class="lang-ja">アイロンビーズ図案メーカー</span><span class="lang-en">Fuse Bead Pattern Maker</span></a></p>
+  <h1><span class="lang-ja">使い方・FAQ</span><span class="lang-en">Guide &amp; FAQ</span></h1>
+</header>
+
+<main>
+
+  <section class="info-section lang-ja">
+    <h2>使い方（3ステップ）</h2>
+    <ol class="howto">
+      <li><strong>画像をドロップ</strong> — ドット絵かどうかを自動判定し、最適な設定で即変換されます。ドット絵なら1ドット=1ビーズの原寸再現。</li>
+      <li><strong>ビーズとサイズを選ぶ</strong> — ブランドを選ぶと、そのブランドで実際に売っている色だけで図案が組まれます。</li>
+      <li><strong>図案を保存して、色リストからそのまま購入</strong> — 必要な色番号と個数が自動集計され、各色の購入リンクが並びます。</li>
+    </ol>
+    <p>細かく調整したい場合は「詳細設定」を開くと、画像タイプ・色数上限・ディザリング・輪郭処理・プレート区切りなどを手動で制御できます。<strong>開かなくても良い結果になるように自動調整されるのが基本設計です。</strong></p>
+
+    <h2>このツールの特徴</h2>
+    <ul>
+      <li><strong>実在の色だけで図案化</strong> — 選んだブランド・シリーズで売られている色のみ使用。色差は知覚色差（CIEDE2000）で判定します。</li>
+      <li><strong>ドット絵の自動修復</strong> — AI生成などで格子が歪んだ・ノイズが乗ったドット絵も、格子を自動検出して1ドット=1ビーズに整えます。</li>
+      <li><strong>崩れないグリッド</strong> — 1マス=1ビーズが構造的に保証されます。</li>
+      <li><strong>画像は送信されません</strong> — 変換はすべてブラウザ内で完結します。</li>
+    </ul>
+
+    <h2 id="mixing">ブランド混合モードについて</h2>
+    <p>ビーズは同じ5mmサイズでも、ブランドごとにプラスチックの硬さと溶ける温度が違います。混合モードは<strong>実際に一緒にアイロンしても問題が起きにくい組み合わせだけ</strong>を提供しています。</p>
+    <p><strong>提供している組み合わせ：</strong></p>
+    <ul>
+      <li><strong>パーラービーズ × Artkal S（5mm）</strong> — どちらも硬質で、Artkal公式がPerlerとの互換を明言。</li>
+      <li><strong>ハマ ミディ × Artkal S（5mm）</strong> — 同じく公式互換。</li>
+    </ul>
+    <p><strong>提供していない組み合わせと理由：</strong></p>
+    <ul>
+      <li><strong>パーラー × ハマ</strong> — 融点差が大きく、ハマだけ先に潰れて接合が弱くなり、後から割れやすい。</li>
+      <li><strong>ミニサイズの異ブランド</strong> — ハマ ミニ2.5mm、パーラー ミニ／Artkalミニ2.6mmと直径自体が違い、融着不良になる。</li>
+      <li><strong>Artkal R・A（軟質）× 他社</strong> — メーカー自身が単独使用を推奨。</li>
+    </ul>
+    <p>混合で作る場合は、本番前に小さなテストピースで試し焼きを。</p>
+
+    <h2>よくある質問</h2>
+    <dl class="faq">
+      <dt>Q. 無料ですか？</dt>
+      <dd>A. すべての機能を無料で使えます。登録も不要です。</dd>
+      <dt>Q. どのブランドに対応していますか？</dt>
+      <dd>A. パーラービーズ（カワダ）、ナノビーズ（カワダ）、ハマビーズ（マキシ／ミディ／ミニ）、Artkal（S・R 5mm／C・A・M 2.6mm）、ブランド混合（パーラー×Artkal S、ハマ×Artkal S）。</dd>
+      <dt>Q. 変換結果がぼやけます／まだらになります</dt>
+      <dd>A. 基本は自動調整で解決しますが、詳細設定で「使う色数の上限」を8〜16色にするとさらにくっきりします。写真は「写真」タイプ＋ディザリングが有効です。</dd>
+      <dt>Q. Artkalは日本で買えますか？</dt>
+      <dd>A. 国内の店頭流通は少なく、主に公式ストア（海外発送・送料と日数がかかります）での購入になります。国内で買いやすいのはパーラービーズ・ナノビーズです。</dd>
+      <dt>Q. 色がモニタと実物で違って見えます</dt>
+      <dd>A. 色データは実測ベース（ナノビーズはカワダ公式カタログのビーズ実物写真から採色）ですが、モニタ発色やビーズのロットで差が出ます。大事な作品は少量で試してから。</dd>
+      <dt>Q. 図案の商用利用はできますか？</dt>
+      <dd>A. 変換結果は自由に使えますが、元画像の著作権にはご注意ください。キャラクター画像などは私的利用の範囲で。</dd>
+    </dl>
+  </section>
+
+  <section class="info-section lang-en">
+    <h2>How to use (3 steps)</h2>
+    <ol class="howto">
+      <li><strong>Drop an image</strong> — pixel art is auto-detected and converted instantly with optimal settings, 1 dot = 1 bead.</li>
+      <li><strong>Pick beads &amp; size</strong> — patterns use only colors actually sold by the brand you choose.</li>
+      <li><strong>Save the pattern and buy beads</strong> — color codes and counts are tallied with purchase links per color.</li>
+    </ul>
+    <p>Open "Advanced settings" for manual control (image type, color limit, dithering, outlines, pegboard dividers). <strong>The default design goal is that you never need to.</strong></p>
+
+    <h2 id="mixing-en">About brand mixing mode</h2>
+    <p>Same-size beads differ in melting temperature between brands. Mixing mode only offers combinations that iron together safely:</p>
+    <ul>
+      <li><strong>Perler × Artkal S (5mm)</strong> — both hard beads, officially compatible.</li>
+      <li><strong>Hama midi × Artkal S (5mm)</strong> — officially compatible.</li>
+    </ul>
+    <p><strong>Not offered:</strong> Perler × Hama (melting mismatch → weak joints), cross-brand minis (2.5mm vs 2.6mm diameter mismatch), Artkal soft series with anything (maker recommends solo use). Always iron a small test piece first.</p>
+
+    <h2>FAQ</h2>
+    <dl class="faq">
+      <dt>Q. Is it free?</dt>
+      <dd>A. Yes, completely free, no registration.</dd>
+      <dt>Q. Supported brands?</dt>
+      <dd>A. Perler (Kawada), Nanobeads (Kawada), Hama (maxi/midi/mini), Artkal (S/R 5mm, C/A/M 2.6mm), plus safe mixed palettes.</dd>
+      <dt>Q. Results look muddy?</dt>
+      <dd>A. Auto settings handle most cases; in Advanced, limit colors to 8–16 for crisper results. For photos use Photo type + dithering.</dd>
+      <dt>Q. Do colors match real beads?</dt>
+      <dd>A. Data is based on measured values; monitors and bead lots vary. Nanobeads colors are approximated from product photos.</dd>
+    </dl>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="lang-ja">
+    <p><a href="./">← ツールに戻る</a></p>
+    <p>色データ: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a>（MIT License）。各ブランド名は各社の商標です。当サイトは各メーカーとは無関係の非公式ツールです。</p>
+    <p>本サイトはアフィリエイトプログラム（Amazonアソシエイト・楽天アフィリエイト・Artkal公式ほか）に参加しています。</p>
+  </div>
+  <div class="lang-en">
+    <p><a href="./">← Back to the tool</a></p>
+    <p>Color data: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a> (MIT). All brand names are trademarks of their owners. Unofficial tool.</p>
+    <p>This site participates in affiliate programs; purchase links may earn us a commission.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var L = "ja";
+  try {
+    L = localStorage.getItem("beads_lang") ||
+      ((navigator.language || "ja").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+  } catch (e) { /* no-op */ }
+  document.documentElement.dataset.lang = L;
+  document.documentElement.lang = L;
+  document.querySelectorAll("[data-lang-btn]").forEach(function (b) {
+    b.classList.toggle("active", b.dataset.langBtn === L);
+    b.addEventListener("click", function () {
+      try { localStorage.setItem("beads_lang", b.dataset.langBtn); } catch (e) { /* no-op */ }
+      location.reload();
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja" data-lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>アイロンビーズ図案メーカー｜写真・画像をドット絵図案に無料変換</title>
+<meta name="description" content="画像をドロップするだけでアイロンビーズの図案に自動変換。パーラービーズ・ナノビーズ・ハマ・Artkal対応。実際に売っている色番号で図案化し、必要な色と個数、購入先まで自動でわかる無料ツール。">
+<meta property="og:title" content="アイロンビーズ図案メーカー / Fuse Bead Pattern Maker">
+<meta property="og:description" content="画像をドロップするだけでアイロンビーズ図案に自動変換。色番号・必要個数・購入先まで出力。">
+<meta property="og:type" content="website">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "アイロンビーズ図案メーカー",
+  "alternateName": "Fuse Bead Pattern Maker",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+  "description": "画像をアイロンビーズの図案に自動変換する無料ツール。実在ブランドの色に減色し、必要なビーズの色番号と個数を自動集計します。"
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="lang-switch">
+    <button type="button" data-lang-btn="ja">日本語</button><button type="button" data-lang-btn="en">English</button>
+  </div>
+  <h1><span class="pixel-logo" aria-hidden="true"></span><span data-i18n="siteTitle">アイロンビーズ図案メーカー</span></h1>
+  <p class="tagline" data-i18n="tagline">画像をドロップするだけ。実際に売っているビーズの色で図案化して、必要な色と個数、買える場所まで。</p>
+  <nav class="header-nav">
+    <a href="guide.html" data-i18n="guideLink">使い方・FAQ</a>
+    <span class="pr-note" data-i18n="prHeader">※購入リンクにはアフィリエイト広告を含みます</span>
+  </nav>
+</header>
+
+<main>
+<div class="workspace">
+<div class="col-left">
+
+  <!-- STEP 1 -->
+  <section class="step" id="step-upload">
+    <h2><span class="step-num">1</span><span data-i18n="step1">画像を選ぶ</span></h2>
+    <div id="dropzone" tabindex="0">
+      <p class="dz-main" data-i18n="dzMain">ここに画像をドラッグ＆ドロップ</p>
+      <p class="dz-sub" data-i18n="dzSub">クリックして選択・スクショの貼り付け（Ctrl+V）もOK</p>
+      <p class="dz-privacy" data-i18n="dzPrivacy">🔒 画像はブラウザの中だけで処理されます。サーバーには送信されません。</p>
+      <input type="file" id="file-input" accept="image/*" hidden>
+    </div>
+    <div id="src-preview-wrap" hidden>
+      <img id="src-preview" alt="preview">
+      <div class="preview-side">
+        <button id="btn-clear-image" type="button" class="btn-sub" data-i18n="btnChangeImage">別の画像にする</button>
+      </div>
+    </div>
+    <div id="detect-banner" class="banner" hidden>
+      <span id="detect-msg"></span>
+      <button id="btn-detect-dots" type="button" class="btn-sub" data-i18n="btnRedetect">再判定</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: シンプル設定（既定） + 詳細設定（折りたたみ） -->
+  <section class="step" id="step-settings" data-mode="illust">
+    <button type="button" class="drawer-close" data-drawer-close>✕</button>
+    <h2><span class="step-num">2</span><span data-i18n="step2">ビーズを選ぶ</span></h2>
+    <p class="auto-note" data-i18n="autoNote">変換はすべて自動。設定を変えると図案も自動で更新されます</p>
+
+    <div class="simple-grid">
+      <label class="field">
+        <span class="field-label" data-i18n="lblSeries">ブランド・シリーズ</span>
+        <select id="sel-series"></select>
+        <span class="field-help" data-i18n="helpSeries">図案はこのシリーズで実際に売られている色だけで作られます</span>
+      </label>
+      <div class="field simple-size">
+        <span class="field-label" data-i18n="lblSizeSimple">図案の大きさ</span>
+        <p class="chip-row" id="simple-size-chips">
+          <button type="button" class="chip chip-size" data-w="29" data-h="29"><span data-i18n="chipSizeS">小 29ビーズ</span></button>
+          <button type="button" class="chip chip-size" data-w="58" data-h="58"><span data-i18n="chipSizeM">中 58ビーズ</span></button>
+          <button type="button" class="chip chip-size" data-w="100" data-h="100"><span data-i18n="chipSizeL">大 100ビーズ</span></button>
+        </p>
+        <span class="field-help only-pixel" data-i18n="helpSizePixel">ドット絵は元の絵のドット数で原寸再現されます（サイズ指定は不要）</span>
+      </div>
+    </div>
+    <div id="mix-note" class="mix-note" hidden></div>
+
+    <button id="btn-advanced" type="button" class="btn-adv">
+      <span class="adv-arrow">▸</span>
+      <span class="adv-title">⚙ <span data-i18n="btnAdvanced">詳細設定</span></span>
+      <span class="adv-hint" data-i18n="advHint">画像タイプ・輪郭・ディザ・サイズの数値指定など、手動で調整したい人向け</span>
+    </button>
+
+    <div id="advanced-panel" class="adv">
+      <div class="group">
+        <h3 class="group-title" data-i18n="groupSize">図案のサイズ</h3>
+        <div class="group-body">
+          <div class="size-row">
+            <label class="field field-num">
+              <span class="field-label" data-i18n="lblW">横（ビーズ数）</span>
+              <input type="number" id="inp-width" min="4" max="200" value="58">
+            </label>
+            <span class="size-x">×</span>
+            <label class="field field-num">
+              <span class="field-label" data-i18n="lblH">縦（ビーズ数）</span>
+              <input type="number" id="inp-height" min="4" max="200" value="58">
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-aspect" checked>
+              <span data-i18n="lblAspect">縦横比を画像に合わせる</span>
+            </label>
+          </div>
+          <p class="chip-row">
+            <span data-i18n="presetsLabel">プリセット:</span>
+            <button type="button" class="chip" data-w="29" data-h="29" data-i18n="chip2929">29×29（プレート1枚）</button>
+            <button type="button" class="chip" data-w="58" data-h="29">58×29</button>
+            <button type="button" class="chip" data-w="58" data-h="58" data-i18n="chip5858">58×58（4枚）</button>
+            <button type="button" class="chip" data-w="50" data-h="50">50×50</button>
+            <button type="button" class="chip" data-w="100" data-h="100">100×100</button>
+          </p>
+          <label class="field">
+            <span class="field-label" data-i18n="lblPlate">プレート区切り線</span>
+            <select id="sel-plate">
+              <option value="0" data-i18n="plateNone">表示しない</option>
+              <option value="29" data-i18n="plate29">29ペグごと（5mm定番プレート）</option>
+              <option value="50" data-i18n="plate50">50ペグごと（ミニ系プレート）</option>
+            </select>
+            <span class="field-help" data-i18n="helpPlate">複数プレートで作るときの境界線（赤線）を図案に表示します</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3 class="group-title" data-i18n="groupTune">変換の調整</h3>
+        <div class="group-body">
+          <div class="field field-wide">
+            <span class="field-label" data-i18n="lblImgType">画像のタイプ（自動判定を上書き）</span>
+            <div class="seg" role="radiogroup">
+              <label><input type="radio" name="mode" value="pixel"><span data-i18n="modePixel">ドット絵</span></label>
+              <label><input type="radio" name="mode" value="illust" checked><span data-i18n="modeIllust">イラスト</span></label>
+              <label><input type="radio" name="mode" value="photo"><span data-i18n="modePhoto">写真</span></label>
+            </div>
+            <span class="field-help only-pixel" data-i18n="helpPixel">元絵の1ドット=1ビーズで原寸再現します（画像読み込み時に自動判定）</span>
+            <span class="field-help only-illust" data-i18n="helpIllust">マスごとに一番面積の大きい色を採用。キャラ絵・ロゴ向け</span>
+            <span class="field-help only-photo" data-i18n="helpPhoto">マスの平均色でなめらかに変換。グラデーションの多い画像向け</span>
+          </div>
+          <div class="opt-row">
+            <label class="field-check only-illust">
+              <input type="checkbox" id="chk-outline" checked>
+              <span data-i18n="optOutline">輪郭線を残す</span>
+            </label>
+            <label class="field-check only-photo">
+              <input type="checkbox" id="chk-dither">
+              <span data-i18n="optDither">ディザリング（2色を混ぜ打ちして中間色を表現）</span>
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-whitebg">
+              <span data-i18n="optWhitebg">背景（白・余白）をビーズなしにする</span>
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-cleanup" checked>
+              <span data-i18n="optCleanup">仕上げの整形（ノイズ粒・浮きビーズを整理）</span>
+            </label>
+          </div>
+          <button id="btn-convert" type="button" class="btn-sub" disabled data-i18n="btnConvert">再変換する</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.col-left -->
+<div class="col-right">
+
+  <!-- STEP 3 -->
+  <section class="step" id="step-result" hidden>
+    <h2><span class="step-num">3</span><span data-i18n="step3">図案</span></h2>
+
+    <div id="pattern-pane">
+    <div id="canvas-wrap">
+      <canvas id="pattern-canvas"></canvas>
+    </div>
+
+    <div class="result-toolbar">
+      <div class="tb-group tb-colors">
+        <span class="tb-label" data-i18n="tbColors">色数</span>
+        <input type="range" id="rng-colors" min="0" max="6" step="1" value="5">
+        <span id="colors-label" class="colors-label">自動</span>
+      </div>
+      <div class="tb-group">
+        <span class="tb-label" data-i18n="tbView">表示</span>
+        <label><span data-i18n="tbZoom">大きさ</span> <input type="range" id="rng-zoom" min="2" max="30" value="14"></label>
+        <label class="field-check"><input type="checkbox" id="chk-grid" checked><span data-i18n="tbGrid">グリッド</span></label>
+        <label class="field-check"><input type="checkbox" id="chk-symbols"><span data-i18n="tbSymbols">色記号</span></label>
+      </div>
+      <div class="tb-group">
+        <label class="field-check edit-toggle"><input type="checkbox" id="chk-editmode"><span data-i18n="tbEditMode">✏ 手直しモード</span></label>
+        <span class="pen-status edit-only"><span data-i18n="penPrefix">ペン:</span> <span id="pen-swatch" class="pen-swatch"></span><span id="pen-label">未選択</span></span>
+        <button id="btn-pen-erase" type="button" class="btn-sub edit-only" data-i18n="btnEraser">消しゴム</button>
+        <button id="btn-undo" type="button" class="btn-sub edit-only" disabled data-i18n="btnUndo">元に戻す</button>
+      </div>
+    </div>
+    <p class="edit-hint edit-only" data-i18n="editHint">手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧から選択・右クリックでスポイト）。OFFなら通常のスクロール操作</p>
+    </div><!-- /#pattern-pane -->
+
+    <div class="dl-row">
+      <button id="btn-dl-png" type="button" class="btn-main" data-i18n="btnDlPng">図案PNGを保存</button>
+      <button id="btn-dl-csv" type="button" class="btn-sub" data-i18n="btnDlCsv">CSVを保存</button>
+      <span id="stat-line" class="stat-line"></span>
+    </div>
+
+    <div id="legend-section">
+    <button type="button" class="drawer-close" data-drawer-close>✕</button>
+    <h3 class="buy-heading" data-i18n="legendTitle">必要なビーズ</h3>
+    <p class="legend-note"><span data-i18n="legendNote">行をクリックするとその色がペンになります。</span><span class="pr-note-inline" data-i18n="prInline">※購入リンクはアフィリエイト広告を含みます。検索結果ページが開くので色番号を確認のうえ購入してください。</span></p>
+    <div id="legend-wrap">
+      <table id="legend-table">
+        <thead>
+          <tr>
+            <th data-i18n="thColor">色</th>
+            <th class="col-sym" data-i18n="thSym">記号</th>
+            <th class="col-code" data-i18n="thCode">色番号</th>
+            <th data-i18n="thName">色名</th>
+            <th class="col-brand" data-i18n="thBrand">ブランド</th>
+            <th data-i18n="thCount">個数</th>
+            <th data-i18n="thBuy">購入先</th>
+          </tr>
+        </thead>
+        <tbody id="legend-body"></tbody>
+      </table>
+    </div>
+    </div><!-- /#legend-section -->
+  </section>
+
+</div><!-- /.col-right -->
+</div><!-- /.workspace -->
+
+<!-- スマホ用: 図案が画面外のとき右下に出るミニプレビュー（タップで図案へ） -->
+<button id="mini-preview" type="button" hidden aria-label="図案へ移動">
+  <canvas id="mini-canvas"></canvas>
+</button>
+
+<!-- スマホ用: ドロワーとボトムバー -->
+<div id="drawer-scrim" hidden></div>
+<nav id="mobile-bar">
+  <button id="btn-drawer-settings" type="button">⚙ <span data-i18n="mbSettings">設定</span></button>
+  <button id="btn-drawer-beads" type="button">🧮 <span data-i18n="mbBeads">ビーズ一覧</span></button>
+</nav>
+
+</main>
+
+<footer class="site-footer">
+  <div class="lang-ja">
+    <p><a href="guide.html">使い方・FAQ・ブランド混合の注意</a></p>
+    <p>色データ: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a>（MIT）。各ブランド名は各社の商標です。当サイトは各メーカーとは無関係の非公式ツールです。画像はブラウザ内で処理され、送信されません。本サイトはアフィリエイトプログラムに参加しています。</p>
+  </div>
+  <div class="lang-en">
+    <p><a href="guide.html">Guide &amp; FAQ</a></p>
+    <p>Color data: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a> (MIT). Brand names are trademarks of their owners. Unofficial tool. Images never leave your browser. This site participates in affiliate programs.</p>
+  </div>
+</footer>
+
+<script src="palettes.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

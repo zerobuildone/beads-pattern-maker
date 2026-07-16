@@ -2228,24 +2228,6 @@ $("btn-dl-png").addEventListener("click", () => {
   a.click();
 });
 
-$("btn-dl-csv").addEventListener("click", () => {
-  if (!state.grid) return;
-  const { W, H, grid, palette } = state;
-  const rows = [];
-  for (let y = 0; y < H; y++) {
-    const row = [];
-    for (let x = 0; x < W; x++) {
-      const v = grid[y * W + x];
-      row.push(v < 0 ? "" : palette[v].c);
-    }
-    rows.push(row.join(","));
-  }
-  const blob = new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.download = `beads_${W}x${H}.csv`;
-  a.href = URL.createObjectURL(blob);
-  a.click();
-});
 
 /* ---------- 起動 ---------- */
 

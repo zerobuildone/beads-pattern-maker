@@ -1980,7 +1980,18 @@ function renderLegend() {
       a.target = "_blank";
       a.rel = "noopener sponsored";
       a.textContent = link.label;
-      a.addEventListener("click", (e) => e.stopPropagation());
+      a.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // どの色・どの店の購入ボタンが押されたかを計測（GA設定時のみ）
+        if (window.gtag) {
+          window.gtag("event", "buy_click", {
+            store: link.label,
+            brand: c.lk || "",
+            color_code: c.c,
+            series: state.series ? state.series.key : "",
+          });
+        }
+      });
       tdBuy.appendChild(a);
     }
     tr.appendChild(tdBuy);

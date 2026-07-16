@@ -104,6 +104,7 @@
   <div class="lang-ja">
     <p><a href="./">← ツールに戻る</a></p>
     <p>色データ: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a>（MIT License）。各ブランド名は各社の商標です。当サイトは各メーカーとは無関係の非公式ツールです。</p>
+    <p>アクセス状況の把握にGoogle Analyticsを使用しています。</p>
     <p>本サイトはアフィリエイトプログラム（Amazonアソシエイト・楽天アフィリエイト・Artkal公式ほか）に参加しています。</p>
   </div>
   <div class="lang-en">
@@ -113,6 +114,23 @@
   </div>
 </footer>
 
+<script src="config.js"></script>
+<script>
+// アクセス解析（config.jsのgaIdが設定されている時だけ）
+(function () {
+  var id = window.AFF_CONFIG && window.AFF_CONFIG.gaId;
+  if (!id) return;
+  var s = document.createElement("script");
+  s.async = true;
+  s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag("js", new Date());
+  gtag("config", id);
+})();
+</script>
 <script>
 (function () {
   var L = "ja";

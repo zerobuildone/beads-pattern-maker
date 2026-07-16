@@ -19,4 +19,8 @@ window.AFF_CONFIG = {
   artkalRef: "461",
   // 紹介コードのURLパラメータ名（Artkal公式はAffiliatly運営のため "aff"）
   artkalRefParam: "aff",
+
+  // Google Analytics 4 測定ID（例: "G-XXXXXXXXXX"）
+  // analytics.google.com でプロパティ作成 → データストリーム追加で発行される。空なら計測なし
+  gaId: "",
 };

@@ -253,16 +253,32 @@
 <footer class="site-footer">
   <div class="lang-ja">
     <p><a href="guide.html">使い方・FAQ・ブランド混合の注意</a></p>
-    <p>色データ: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a>（MIT）。各ブランド名は各社の商標です。当サイトは各メーカーとは無関係の非公式ツールです。画像はブラウザ内で処理され、送信されません。本サイトはアフィリエイトプログラムに参加しています。</p>
+    <p>色データ: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a>（MIT）。各ブランド名は各社の商標です。当サイトは各メーカーとは無関係の非公式ツールです。画像はブラウザ内で処理され、送信されません。アクセス状況の把握にGoogle Analyticsを使用しています。本サイトはアフィリエイトプログラムに参加しています。</p>
   </div>
   <div class="lang-en">
     <p><a href="guide.html">Guide &amp; FAQ</a></p>
-    <p>Color data: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a> (MIT). Brand names are trademarks of their owners. Unofficial tool. Images never leave your browser. This site participates in affiliate programs.</p>
+    <p>Color data: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a> (MIT). Brand names are trademarks of their owners. Unofficial tool. Images never leave your browser. We use Google Analytics for traffic statistics. This site participates in affiliate programs.</p>
   </div>
 </footer>
 
 <script src="palettes.js"></script>
 <script src="config.js"></script>
+<script>
+// アクセス解析（config.jsのgaIdが設定されている時だけ読み込む）
+(function () {
+  var id = window.AFF_CONFIG && window.AFF_CONFIG.gaId;
+  if (!id) return;
+  var s = document.createElement("script");
+  s.async = true;
+  s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag("js", new Date());
+  gtag("config", id);
+})();
+</script>
 <script src="app.js"></script>
 </body>
 </html>

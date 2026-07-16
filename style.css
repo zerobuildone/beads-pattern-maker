@@ -601,6 +601,18 @@ body.edit-on p.edit-only { display: block !important; }
 .faq dt { font-weight: bold; margin-top: 14px; }
 .faq dd { margin-left: 1em; color: #46413a; }
 
+/* 検索エンジン向けの紹介セクション（控えめに） */
+.seo-intro {
+  max-width: 900px;
+  margin: 40px auto 0;
+  padding: 0 20px;
+  font-size: .88rem;
+  color: var(--ink-sub);
+}
+.seo-intro h2 { font-size: 1.0rem; color: var(--ink); margin-bottom: 8px; }
+.seo-intro p { margin-bottom: 10px; }
+.seo-intro a { color: var(--accent); }
+
 /* ---------- フッター ---------- */
 
 .site-footer {

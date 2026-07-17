@@ -463,6 +463,44 @@ function boostThinOutlines(src, sw, sh, cellPx) {
   return out;
 }
 
+// 背景除去の対象マスを決める。
+// 「白っぽい色」を全部消すと目や縁取りの白まで消えてしまうため、
+// 背景候補（白 or 外周支配色に近い色）のうち「画像の外周と連結している領域」だけを
+// 塗りつぶし探索(BFS)で特定して消す。キャラ内部に閉じた白はビーズとして残る
+function computeBgRemoval(cellRgb, cellAlpha, W, H, bgColors) {
+  const total = W * H;
+  const cand = new Uint8Array(total);
+  for (let i = 0; i < total; i++) {
+    if (cellAlpha[i] < 0.5) continue;
+    const r = cellRgb[i * 3], g = cellRgb[i * 3 + 1], b = cellRgb[i * 3 + 2];
+    const lab = srgbToLab(r, g, b);
+    let isCand = lab[0] > 92 && Math.abs(lab[1]) < 7 && Math.abs(lab[2]) < 7;
+    if (!isCand) {
+      for (const bc of bgColors) {
+        const dr = r - bc[0], dg = g - bc[1], db = b - bc[2];
+        if (dr * dr + dg * dg + db * db <= 1200) { isCand = true; break; }
+      }
+    }
+    cand[i] = isCand ? 1 : 0;
+  }
+  const remove = new Uint8Array(total);
+  const queue = [];
+  const push = (i) => {
+    if (cand[i] && !remove[i]) { remove[i] = 1; queue.push(i); }
+  };
+  for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (queue.length) {
+    const i = queue.pop();
+    const x = i % W, y = (i / W) | 0;
+    if (x > 0) push(i - 1);
+    if (x < W - 1) push(i + 1);
+    if (y > 0) push(i - W);
+    if (y < H - 1) push(i + W);
+  }
+  return remove;
+}
+
 // 近い色のセルを多数派の色に統合する（JPEG圧縮やテクスチャの色ブレで
 // 「元は同じ単色」だったドットがバラバラのビーズ色に割れるのを防ぐ）
 function consolidateCellColors(cellRgb, cellAlpha, total, maxDE) {
@@ -1473,22 +1511,15 @@ function convert() {
   const dropWhite = chkWhiteBg.checked;
   const err = useDither ? new Float32Array(W * H * 3) : null;
   const cellLabArr = new Float64Array(W * H * 3); // 色数上限の再探索用に各セルのLabを保持
+  // 背景除去: 外周と連結した背景領域だけを消す（目・縁取りの白は残す）
+  const bgRemove = dropWhite ? computeBgRemoval(cellRgb, cellAlpha, W, H, bgColors) : null;
 
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const i = y * W + x;
       if (cellAlpha[i] < 0.5) continue;
+      if (bgRemove && bgRemove[i]) continue;
       let r = cellRgb[i * 3], g = cellRgb[i * 3 + 1], b = cellRgb[i * 3 + 2];
-      if (dropWhite) {
-        const lab0 = srgbToLab(r, g, b);
-        if (lab0[0] > 92 && Math.abs(lab0[1]) < 7 && Math.abs(lab0[2]) < 7) continue;
-        let isBg = false;
-        for (const bc of bgColors) {
-          const dr = r - bc[0], dg = g - bc[1], db = b - bc[2];
-          if (dr * dr + dg * dg + db * db <= 1200) { isBg = true; break; }
-        }
-        if (isBg) continue;
-      }
       if (useDither) {
         r = Math.max(0, Math.min(255, r + err[i * 3]));
         g = Math.max(0, Math.min(255, g + err[i * 3 + 1]));

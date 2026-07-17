@@ -1445,10 +1445,8 @@ function restoreSession() {
     chkSpecial.checked = !!s.special;
     chkShading.checked = s.shading !== false;
     chkDitherMix.checked = !!s.ditherMix;
-    // 縁取り: addOutline がある形式が正。無い旧形式は outlineColor の値から推定
-    chkAddOutline.checked = s.addOutline !== undefined
-      ? !!s.addOutline
-      : !!(s.outlineColor && s.outlineColor !== "none");
+    // 縁取り: 明示的にONで保存されていた場合だけON（既定は常にOFF）
+    chkAddOutline.checked = s.addOutline === true;
     outlineColorRow.hidden = !chkAddOutline.checked;
     if (s.outlineColor && s.outlineColor !== "none") outlineCode = s.outlineColor;
     selPlate.value = s.plate || "0";

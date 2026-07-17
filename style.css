@@ -16,7 +16,13 @@
   --shadow: 3px 3px 0 var(--ink);
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* スクロールバーの出現で横幅が変わり、クリック直前にボタンが動くのを防ぐ
+     （常にスクロールバー領域を確保してレイアウトシフトをゼロにする） */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
 
 body {
   font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;

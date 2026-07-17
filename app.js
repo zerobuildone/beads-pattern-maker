@@ -1760,6 +1760,16 @@ const symOf = (idx) => state.symMap.get(idx) || "?";
 
 function cellSize() { return +rngZoom.value; }
 
+// 透過（ビーズなし）マスの市松模様。白ビーズと一目で区別できるようにする
+function drawEmptyCell(c2, px, py, s) {
+  c2.fillStyle = "#e9e9e9";
+  c2.fillRect(px, py, s, s);
+  const h = s / 2;
+  c2.fillStyle = "#cdcdcd";
+  c2.fillRect(px, py, h, h);
+  c2.fillRect(px + h, py + h, s - h, s - h);
+}
+
 // 図案を表示領域の横幅にフィットさせる自動ズーム。
 // ユーザーが手動でズームした後は、次の変換まで上書きしない
 let userZoomed = false;
@@ -1793,7 +1803,10 @@ function render() {
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const v = grid[y * W + x];
-      if (v < 0) continue;
+      if (v < 0) {
+        drawEmptyCell(ctx, x * cs, y * cs, cs);
+        continue;
+      }
       const c = palette[v].rgb;
       ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
       ctx.fillRect(x * cs, y * cs, cs, cs);
@@ -2285,7 +2298,11 @@ $("btn-dl-png").addEventListener("click", () => {
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const v = grid[y * W + x];
-      c2.fillStyle = v < 0 ? "#f5f2ec" : `rgb(${palette[v].rgb.join(",")})`;
+      if (v < 0) {
+        drawEmptyCell(c2, margin + x * cs, margin + y * cs, cs);
+        continue;
+      }
+      c2.fillStyle = `rgb(${palette[v].rgb.join(",")})`;
       c2.fillRect(margin + x * cs, margin + y * cs, cs, cs);
     }
   }

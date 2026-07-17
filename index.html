@@ -192,6 +192,15 @@
               <input type="checkbox" id="chk-special">
               <span data-i18n="optSpecial">特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）</span>
             </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-addoutline">
+              <span data-i18n="optAddOutline">図案のふちに縁取りを追加（アウトライン）</span>
+            </label>
+            <div class="outline-row" id="outline-color-row" hidden>
+              <label for="sel-outline-color" data-i18n="optOutlineColor">縁取りの色</label>
+              <span class="outline-swatch" id="outline-swatch"></span>
+              <select id="sel-outline-color"></select>
+            </div>
           </div>
           <button id="btn-convert" type="button" class="btn-sub" disabled data-i18n="btnConvert">再変換する</button>
         </div>

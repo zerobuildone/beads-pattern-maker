@@ -824,6 +824,10 @@ const selPlate = $("sel-plate");
 const chkOutline = $("chk-outline");
 const chkCleanup = $("chk-cleanup");
 const chkSpecial = $("chk-special");
+const chkAddOutline = $("chk-addoutline");
+const selOutlineColor = $("sel-outline-color");
+const outlineSwatch = $("outline-swatch");
+const outlineColorRow = $("outline-color-row");
 
 // 選択シリーズの「実際に配色へ使うパレット」。
 // ラメ・夜光・透明系(sp)は実物の見え方が別物なので、チェックONの時だけ含める
@@ -832,6 +836,35 @@ function activePalette(seriesKey, useSpecial) {
   if (useSpecial) return base;
   const filtered = base.filter((c) => !c.sp);
   return filtered.length ? filtered : base;
+}
+
+// 縁取り(アウトライン)色の選択肢を現在のパレットと同期させる。
+// 選択は色コードで記憶し、無ければ純黒(くろ/Black)、それも無ければ最暗色を既定にする。
+// option の並びはパレットと1:1なので、selectedIndex がそのまま palette の添字になる
+let outlineCode = null;
+function refreshOutlineOptions(palette) {
+  selOutlineColor.innerHTML = "";
+  let sel = -1, black = -1, darkest = 0;
+  for (let i = 0; i < palette.length; i++) {
+    const c = palette[i];
+    const opt = document.createElement("option");
+    opt.value = c.c;
+    opt.textContent = dispName(c);
+    opt.dataset.rgb = c.rgb.join(",");
+    selOutlineColor.appendChild(opt);
+    if (sel < 0 && outlineCode != null && c.c === outlineCode) sel = i;
+    if (black < 0 && !c.rgb[0] && !c.rgb[1] && !c.rgb[2]) black = i;
+    if (c.lab[0] < palette[darkest].lab[0]) darkest = i;
+  }
+  if (!palette.length) return;
+  const idx = sel >= 0 ? sel : (black >= 0 ? black : darkest);
+  selOutlineColor.selectedIndex = idx;
+  outlineCode = palette[idx].c;
+  updateOutlineSwatch();
+}
+function updateOutlineSwatch() {
+  const opt = selOutlineColor.selectedOptions[0];
+  outlineSwatch.style.background = opt ? `rgb(${opt.dataset.rgb})` : "transparent";
 }
 const chkDither = $("chk-dither");
 const chkWhiteBg = $("chk-whitebg");
@@ -922,6 +955,9 @@ const I18N = {
   optCleanup: { ja: "仕上げの整形（ノイズ粒・浮きビーズを整理）", en: "Cleanup pass (remove noise & stray beads)" },
   optSpecial: { ja: "特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）",
     en: "Use specialty colors (glitter / glow / clear — they look very different in real life, OFF recommended)" },
+  optAddOutline: { ja: "図案のふちに縁取りを追加（アウトライン）",
+    en: "Add an outline along the pattern edge" },
+  optOutlineColor: { ja: "縁取りの色", en: "Outline color" },
   lblMaxColors: { ja: "使う色数の上限", en: "Max colors" },
   mcNone: { ja: "制限なし", en: "No limit" },
   mc8: { ja: "8色まで", en: "Up to 8" },
@@ -1225,6 +1261,19 @@ document.querySelectorAll(".chip").forEach((chip) => {
 
 [chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg].forEach((el) =>
   el.addEventListener("change", scheduleConvert));
+chkAddOutline.addEventListener("change", () => {
+  outlineColorRow.hidden = !chkAddOutline.checked;
+  // 画像読み込み前にONにした場合でも、現在のブランド/サイズの色一覧を出しておく
+  if (chkAddOutline.checked && !selOutlineColor.options.length) {
+    refreshOutlineOptions(activePalette(currentSeries().key, chkSpecial.checked));
+  }
+  scheduleConvert();
+});
+selOutlineColor.addEventListener("change", () => {
+  outlineCode = selOutlineColor.value;
+  updateOutlineSwatch();
+  scheduleConvert();
+});
 
 function updateColorsLabel() {
   const v = colorLimitValue();
@@ -1293,6 +1342,8 @@ function saveSession() {
       whitebg: chkWhiteBg.checked,
       cleanup: chkCleanup.checked,
       special: chkSpecial.checked,
+      addOutline: chkAddOutline.checked,
+      outlineColor: outlineCode,
       plate: selPlate.value,
       colorsIdx: +rngColors.value,
       grid: gridToB64(state.grid),
@@ -1323,12 +1374,16 @@ function restoreSession() {
     chkWhiteBg.checked = !!s.whitebg;
     chkCleanup.checked = s.cleanup !== false;
     chkSpecial.checked = !!s.special;
+    chkAddOutline.checked = !!s.addOutline;
+    outlineColorRow.hidden = !chkAddOutline.checked;
+    if (s.outlineColor) outlineCode = s.outlineColor;
     selPlate.value = s.plate || "0";
     rngColors.value = String(s.colorsIdx == null ? 5 : s.colorsIdx);
     updateColorsLabel();
     if (s.banner) showBanner(s.banner.cls, s.banner.kind, s.banner.params);
     // 保存時と同じ特殊色フィルタを適用したパレットで復元（グリッドの色番号が並びに依存するため）
     const palette = activePalette(s.series, !!s.special);
+    refreshOutlineOptions(palette);
     const grid = s.grid && palette.length ? b64ToGrid(s.grid, s.W * s.H) : null;
     if (grid) {
       // 手直しの編集内容ごと復元
@@ -1468,6 +1523,7 @@ function convert() {
   const series = currentSeries();
   const palette = activePalette(series.key, chkSpecial.checked);
   if (!palette.length) return;
+  refreshOutlineOptions(palette);
 
   // 元画像を作業キャンバスへ
   const mode = getMode();
@@ -1597,6 +1653,11 @@ function convert() {
     cleanupPattern(grid, W, H, palette);
   }
 
+  // 縁取り: ビーズなしマス（図案の外周含む）に接する縁のマスをアウトライン色へ置き換える
+  if (chkAddOutline.checked && selOutlineColor.selectedIndex >= 0) {
+    applyOutline(grid, W, H, selOutlineColor.selectedIndex);
+  }
+
   state.grid = grid;
   state.W = W; state.H = H;
   state.palette = palette;
@@ -1627,6 +1688,22 @@ function convert() {
     stepResult.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   saveSession();
+}
+
+// 縁取り(アウトライン): ビーズなしマス・図案の外周に接している縁のマスを指定色へ置き換える。
+// 外側に1マス足す方式ではなく縁のマスを置き換える方式なので、プレートサイズからはみ出さない
+function applyOutline(grid, W, H, colorIdx) {
+  const src = grid.slice();
+  const empty = (x, y) => x < 0 || y < 0 || x >= W || y >= H || src[y * W + x] < 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (src[i] < 0) continue;
+      if (empty(x - 1, y) || empty(x + 1, y) || empty(x, y - 1) || empty(x, y + 1)) {
+        grid[i] = colorIdx;
+      }
+    }
+  }
 }
 
 // 色数上限: Ward法型の貪欲統合。

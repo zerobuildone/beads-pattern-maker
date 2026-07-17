@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("beads_lang")) return;
+    if (/bot|crawl|spider|slurp|headless|lighthouse|prerender/i.test(navigator.userAgent)) return;
+    if ((navigator.language || "").toLowerCase().indexOf("ja") === 0)
+      location.replace(new URL("../", location.href));
+  } catch (e) { /* no-op */ }
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L8L3LJ2P45"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-L8L3LJ2P45');
+</script>
+<title>Fuse Bead Pattern Maker | Free photo-to-pattern converter for Perler / Hama / Artkal</title>
+<meta name="description" content="Drop any image and get a fuse bead pattern in seconds. Free, no sign-up. Supports Perler, Hama, Artkal and Nanobeads with real store color codes — counts every bead you need and links to buy them.">
+<link rel="canonical" href="https://zerobuildone.github.io/beads-pattern-maker/en/">
+<link rel="alternate" hreflang="ja" href="https://zerobuildone.github.io/beads-pattern-maker/">
+<link rel="alternate" hreflang="en" href="https://zerobuildone.github.io/beads-pattern-maker/en/">
+<link rel="alternate" hreflang="x-default" href="https://zerobuildone.github.io/beads-pattern-maker/en/">
+<meta property="og:title" content="Fuse Bead Pattern Maker – Photo to Perler / Hama / Artkal Pattern">
+<meta property="og:description" content="Drop an image, get a bead pattern with real color codes, bead counts and buy links. Free, runs in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://zerobuildone.github.io/beads-pattern-maker/en/">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:image" content="https://zerobuildone.github.io/beads-pattern-maker/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="Fuse Bead Pattern Maker">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#fcfbf8">
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Fuse Bead Pattern Maker",
+  "alternateName": "アイロンビーズ図案メーカー",
+  "applicationCategory": "DesignApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "url": "https://zerobuildone.github.io/beads-pattern-maker/en/",
+  "image": "https://zerobuildone.github.io/beads-pattern-maker/ogp.png",
+  "inLanguage": ["en", "ja"],
+  "featureList": "Pixel-art auto detection with 1:1 reproduction, quantization to real brand colors, automatic bead counts, purchase links",
+  "description": "Free tool that converts any image into a fuse bead pattern. Reduces colors to real Perler / Hama / Artkal / Nanobeads palettes and counts every bead color you need."
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css?v=1784277407">
+</head>
+<body>
+<noscript><p style="padding:16px;text-align:center">このツールはブラウザ内で画像を変換するため、JavaScriptを有効にしてご利用ください。/ This tool converts images in your browser and requires JavaScript.</p></noscript>
+
+<header class="site-header">
+  <div class="lang-switch">
+    <button type="button" data-lang-btn="ja">日本語</button><button type="button" data-lang-btn="en">English</button>
+  </div>
+  <h1><span class="pixel-logo" aria-hidden="true"></span><span data-i18n="siteTitle">Fuse Bead Pattern Maker</span></h1>
+  <p class="tagline" data-i18n="tagline">Just drop an image. Get a bead pattern in real, purchasable colors — with counts and shopping links.</p>
+  <nav class="header-nav">
+    <a href="../guide.html" data-i18n="guideLink">Guide &amp; FAQ</a>
+    <span class="pr-note" data-i18n="prHeader">Purchase links may earn us an affiliate commission.</span>
+  </nav>
+</header>
+
+<main>
+<div class="workspace">
+<div class="col-left">
+
+  <!-- STEP 1 -->
+  <section class="step" id="step-upload">
+    <h2><span class="step-num">1</span><span data-i18n="step1">Choose an image</span></h2>
+    <div id="dropzone" tabindex="0">
+      <p class="dz-main" data-i18n="dzMain">Drag &amp; drop an image here</p>
+      <p class="dz-sub" data-i18n="dzSub">Click to browse, or paste a screenshot (Ctrl+V)</p>
+      <p class="dz-privacy" data-i18n="dzPrivacy">🔒 Your image is processed entirely in your browser. Nothing is uploaded.</p>
+      <input type="file" id="file-input" accept="image/*" hidden>
+    </div>
+    <div id="src-preview-wrap" hidden>
+      <img id="src-preview" alt="preview">
+      <div class="preview-side">
+        <button id="btn-crop" type="button" class="btn-sub" data-i18n="btnCrop">✂ Crop</button>
+        <button id="btn-clear-image" type="button" class="btn-sub" data-i18n="btnChangeImage">Change image</button>
+      </div>
+    </div>
+    <div id="detect-banner" class="banner" hidden>
+      <span id="detect-msg"></span>
+      <button id="btn-detect-dots" type="button" class="btn-sub" data-i18n="btnRedetect">Re-detect</button>
+    </div>
+  </section>
+
+  <!-- STEP 2: シンプル設定（既定） + 詳細設定（折りたたみ） -->
+  <section class="step" id="step-settings" data-mode="illust">
+    <button type="button" class="drawer-close" data-drawer-close>✕</button>
+    <h2><span class="step-num">2</span><span data-i18n="step2">Pick your beads</span></h2>
+    <p class="auto-note" data-i18n="autoNote">Everything is automatic — the pattern updates whenever you change a setting</p>
+
+    <div class="simple-grid">
+      <label class="field">
+        <span class="field-label" data-i18n="lblSeries">Brand / series</span>
+        <select id="sel-series"></select>
+        <span class="field-help" data-i18n="helpSeries">Pattern colors are chosen only from colors actually sold in the selected series</span>
+      </label>
+      <div class="field simple-size">
+        <span class="field-label" data-i18n="lblSizeSimple">Pattern size</span>
+        <p class="chip-row" id="simple-size-chips">
+          <button type="button" class="chip chip-size" data-w="29" data-h="29"><span data-i18n="chipSizeS">S · 29 beads</span></button>
+          <button type="button" class="chip chip-size" data-w="58" data-h="58"><span data-i18n="chipSizeM">M · 58 beads</span></button>
+          <button type="button" class="chip chip-size" data-w="100" data-h="100"><span data-i18n="chipSizeL">L · 100 beads</span></button>
+        </p>
+        <span class="field-help only-pixel" data-i18n="helpSizePixel">Pixel art is reproduced at its original dot dimensions (no size needed)</span>
+      </div>
+    </div>
+    <div id="mix-note" class="mix-note" hidden></div>
+
+    <!-- しあがり: 見た目に直結する「好みで選ぶ」設定だけを常時表示 -->
+    <div class="finish-block">
+      <h3 class="finish-title" data-i18n="groupFinish">🎨 Finishing</h3>
+      <label class="field finish-colors">
+        <span class="field-label"><span data-i18n="tbColors">Colors</span>　<span id="colors-label" class="colors-label">Auto</span></span>
+        <input type="range" id="rng-colors" min="0" max="6" step="1" value="5">
+      </label>
+      <label class="field-check">
+        <input type="checkbox" id="chk-whitebg">
+        <span data-i18n="optWhitebg">Transparent background (no beads on white margins)</span>
+      </label>
+      <label class="field-check">
+        <input type="checkbox" id="chk-addoutline">
+        <span data-i18n="optAddOutline">Add outline</span>
+      </label>
+      <div class="outline-row" id="outline-color-row" hidden>
+        <label for="sel-outline-color" data-i18n="optOutlineColor">Outline color</label>
+        <span class="outline-swatch" id="outline-swatch"></span>
+        <select id="sel-outline-color"></select>
+      </div>
+      <label class="field-check">
+        <input type="checkbox" id="chk-dithermix">
+        <span data-i18n="optDitherMix">Blend colors (checkerboard two beads to create in-between tones)</span>
+      </label>
+    </div>
+
+    <button id="btn-advanced" type="button" class="btn-adv">
+      <span class="adv-arrow">▸</span>
+      <span class="adv-title">⚙ <span data-i18n="btnAdvanced">Advanced settings</span></span>
+      <span class="adv-hint" data-i18n="advHint">Manual controls: image type, outlines, dithering, exact size, etc.</span>
+    </button>
+
+    <div id="advanced-panel" class="adv">
+      <div class="group">
+        <h3 class="group-title" data-i18n="groupSize">Pattern size</h3>
+        <div class="group-body">
+          <div class="size-row">
+            <label class="field field-num">
+              <span class="field-label" data-i18n="lblW">Width (beads)</span>
+              <input type="number" id="inp-width" min="4" max="200" value="58">
+            </label>
+            <span class="size-x">×</span>
+            <label class="field field-num">
+              <span class="field-label" data-i18n="lblH">Height (beads)</span>
+              <input type="number" id="inp-height" min="4" max="200" value="58">
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-aspect" checked>
+              <span data-i18n="lblAspect">Keep image aspect ratio</span>
+            </label>
+          </div>
+          <p class="chip-row">
+            <span data-i18n="presetsLabel">Presets:</span>
+            <button type="button" class="chip" data-w="29" data-h="29" data-i18n="chip2929">29×29 (1 pegboard)</button>
+            <button type="button" class="chip" data-w="58" data-h="29">58×29</button>
+            <button type="button" class="chip" data-w="58" data-h="58" data-i18n="chip5858">58×58 (4 pegboards)</button>
+            <button type="button" class="chip" data-w="50" data-h="50">50×50</button>
+            <button type="button" class="chip" data-w="100" data-h="100">100×100</button>
+          </p>
+          <label class="field">
+            <span class="field-label" data-i18n="lblPlate">Pegboard divider lines</span>
+            <select id="sel-plate">
+              <option value="0" data-i18n="plateNone">None</option>
+              <option value="29" data-i18n="plate29">Every 29 pegs (standard 5mm board)</option>
+              <option value="50" data-i18n="plate50">Every 50 pegs (mini board)</option>
+            </select>
+            <span class="field-help" data-i18n="helpPlate">Shows red boundary lines for projects spanning multiple pegboards</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3 class="group-title" data-i18n="groupTune">Conversion options</h3>
+        <div class="group-body">
+          <div class="field field-wide">
+            <span class="field-label" data-i18n="lblImgType">Image type</span>
+            <div class="seg" role="radiogroup">
+              <label><input type="radio" name="mode" value="pixel"><span data-i18n="modePixel">Pixel art</span></label>
+              <label><input type="radio" name="mode" value="illust" checked><span data-i18n="modeIllust">Illustration</span></label>
+              <label><input type="radio" name="mode" value="photo"><span data-i18n="modePhoto">Photo</span></label>
+            </div>
+            <span class="field-help only-pixel" data-i18n="helpPixel">Reproduces the source exactly, 1 dot = 1 bead (auto-detected on load)</span>
+            <span class="field-help only-illust" data-i18n="helpIllust">Uses the dominant color per cell. Best for character art and logos</span>
+            <span class="field-help only-photo" data-i18n="helpPhoto">Uses average colors for smooth results. Best for photos and gradients</span>
+          </div>
+          <div class="opt-row">
+            <label class="field-check only-illust">
+              <input type="checkbox" id="chk-outline" checked>
+              <span data-i18n="optOutline">Preserve outlines</span>
+            </label>
+            <label class="field-check only-photo">
+              <input type="checkbox" id="chk-dither">
+              <span data-i18n="optDither">Dithering (mixes two colors to fake in-between tones)</span>
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-special">
+              <span data-i18n="optSpecial">Use specialty colors (glitter / glow / clear — they look very different in real life, OFF recommended)</span>
+            </label>
+          </div>
+          <div class="quality-sub">
+            <span class="quality-title" data-i18n="optQualityTitle">Conversion quality (leave ON normally)</span>
+            <label class="field-check">
+              <input type="checkbox" id="chk-cleanup" checked>
+              <span data-i18n="optCleanup">Cleanup pass (remove noise &amp; stray beads)</span>
+            </label>
+            <label class="field-check">
+              <input type="checkbox" id="chk-shading" checked>
+              <span data-i18n="optShading">Preserve shading (spread tones across similar beads)</span>
+            </label>
+          </div>
+          <button id="btn-convert" type="button" class="btn-sub" disabled data-i18n="btnConvert">Reconvert</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.col-left -->
+<div class="col-right">
+
+  <!-- STEP 3 -->
+  <section class="step" id="step-result" hidden>
+    <h2><span class="step-num">3</span><span data-i18n="step3">Pattern</span></h2>
+
+    <div id="pattern-pane">
+    <!-- ブランド変更時: 手直しを引き継いだ旨と破棄の選択肢 -->
+    <div id="carry-note" class="carry-note" hidden>
+      <span data-i18n="carryMsg">✏ Your manual edits were carried over using the closest colors in the new palette</span>
+      <button id="btn-carry-discard" type="button" class="btn-sub" data-i18n="carryDiscard">Discard edits &amp; reconvert</button>
+      <button id="btn-carry-keep" type="button" class="btn-sub" data-i18n="carryKeep">Keep them</button>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="pattern-canvas"></canvas>
+    </div>
+
+    <div class="result-toolbar">
+      <div class="tb-group">
+        <label title="Zoom">🔍 <input type="range" id="rng-zoom" min="2" max="30" value="14"></label>
+        <label class="field-check"><input type="checkbox" id="chk-grid" checked><span data-i18n="tbGrid">Grid</span></label>
+        <label class="field-check"><input type="checkbox" id="chk-symbols"><span data-i18n="tbSymbols">Symbols</span></label>
+      </div>
+      <div class="tb-group">
+        <button id="btn-editmode" type="button" class="btn-sub tool-btn edit-toggle" data-i18n="tbEditMode">✏ Edit</button>
+      </div>
+    </div>
+
+    <!-- 手直しパネル: 手直しモードON中だけ表示。ツール→色の2段構成 -->
+    <div id="edit-panel" class="edit-panel">
+      <div class="ep-row">
+        <button id="tool-pen" type="button" class="btn-sub tool-btn active" data-i18n="toolPen">✎ Pen</button>
+        <button id="tool-fill" type="button" class="btn-sub tool-btn" data-i18n="toolFill">▧ Fill</button>
+        <button id="tool-replace" type="button" class="btn-sub tool-btn" data-i18n="toolReplace">⇄ Replace</button>
+        <button id="btn-pen-erase" type="button" class="btn-sub tool-btn" data-i18n="btnEraser">◻ Eraser</button>
+        <span class="ep-size">
+          <span class="tb-label" data-i18n="tbPenSize">Size</span>
+          <button type="button" class="btn-sub pen-size-btn active" data-size="1">1</button>
+          <button type="button" class="btn-sub pen-size-btn" data-size="2">2</button>
+          <button type="button" class="btn-sub pen-size-btn" data-size="3">3</button>
+        </span>
+        <button id="btn-undo" type="button" class="btn-sub ep-undo" disabled data-i18n="btnUndo">↩ Undo</button>
+        <button id="btn-redo" type="button" class="btn-sub" disabled data-i18n="btnRedo">↪ Redo</button>
+      </div>
+      <div class="ep-row">
+        <span class="pen-status"><span data-i18n="penPrefix">Pen:</span> <span id="pen-swatch" class="pen-swatch"></span><span id="pen-label">not selected</span></span>
+        <button id="btn-palette" type="button" class="btn-sub" data-i18n="btnPalette">🎨 Pick from all colors</button>
+      </div>
+      <div id="palette-pop" class="palette-pop" hidden></div>
+      <p class="edit-hint" data-i18n="editHint">Tap/click the pattern to paint. Pick colors from the bead list, the 🎨 palette, or right-click to eyedrop. "⇄ Replace" swaps every cell of the tapped color to the pen color</p>
+    </div>
+    </div><!-- /#pattern-pane -->
+
+    <div class="dl-row">
+      <button id="btn-dl-png" type="button" class="btn-main" data-i18n="btnDlPng">Save pattern PNG</button>
+      <span id="stat-line" class="stat-line"></span>
+    </div>
+
+    <div id="legend-section">
+    <button type="button" class="drawer-close" data-drawer-close>✕</button>
+    <h3 class="buy-heading" data-i18n="legendTitle">Beads needed</h3>
+    <p class="legend-note"><span data-i18n="legendNote">Click a row to use that color as the pen. </span><span class="pr-note-inline" data-i18n="prInline">Purchase links may earn us a commission. They open search results — check the color code before buying.</span></p>
+    <div id="legend-wrap">
+      <table id="legend-table">
+        <thead>
+          <tr>
+            <th data-i18n="thColor">Color</th>
+            <th class="col-sym" data-i18n="thSym">Sym</th>
+            <th class="col-code" data-i18n="thCode">Code</th>
+            <th data-i18n="thName">Name</th>
+            <th class="col-brand" data-i18n="thBrand">Brand</th>
+            <th data-i18n="thCount">Count</th>
+            <th data-i18n="thBuy">Buy</th>
+            <th class="th-swap"></th>
+          </tr>
+        </thead>
+        <tbody id="legend-body"></tbody>
+      </table>
+    </div>
+    </div><!-- /#legend-section -->
+  </section>
+
+</div><!-- /.col-right -->
+</div><!-- /.workspace -->
+
+<!-- スマホ用: 図案が画面外のとき右下に出るミニプレビュー（タップで図案へ） -->
+<button id="mini-preview" type="button" hidden aria-label="Jump to pattern">
+  <canvas id="mini-canvas"></canvas>
+</button>
+
+<!-- スマホ用: ドロワーとボトムバー -->
+<div id="drawer-scrim" hidden></div>
+<nav id="mobile-bar">
+  <button id="btn-drawer-settings" type="button">⚙ <span data-i18n="mbSettings">Settings</span></button>
+  <button id="btn-drawer-beads" type="button">🧮 <span data-i18n="mbBeads">Beads</span></button>
+</nav>
+
+<!-- 検索エンジン向けの説明（ユーザーにも読める簡潔な紹介） -->
+<section class="seo-intro lang-en">
+  <h2>Free fuse bead pattern generator — turn any photo into a Perler, Hama or Artkal pattern</h2>
+  <p>Fuse Bead Pattern Maker converts photos, illustrations and pixel art into fuse bead patterns automatically. Unlike generic pixelators, it quantizes your image to colors that are actually sold — Perler, Hama (midi/mini), Artkal (5mm and 2.6mm) and Kawada Nanobeads — so the pattern doubles as a shopping list. Pixel art is auto-detected and reproduced dot-for-dot (one pixel = one bead), including AI-generated pixel art with a broken grid.</p>
+  <p>The tool tallies exactly which bead colors and how many of each you need, with purchase links per color, and exports the pattern as a PNG with grid coordinates and color symbols. Large designs get pegboard split lines. Free, no sign-up, no install — and your images are processed entirely in your browser, never uploaded. See the <a href="../guide.html">guide &amp; FAQ</a> for details.</p>
+</section>
+
+</main>
+
+<footer class="site-footer">
+    <div class="lang-en">
+    <p><a href="../guide.html">Guide &amp; FAQ</a></p>
+    <p>Color data: <a href="https://github.com/maxcleme/beadcolors" target="_blank" rel="noopener">maxcleme/beadcolors</a> (MIT). Brand names are trademarks of their owners. Unofficial tool. Images never leave your browser. We use Google Analytics for traffic statistics. This site participates in affiliate programs. As an Amazon Associate, we earn from qualifying purchases.</p>
+  </div>
+</footer>
+
+<!-- トリミングモーダル -->
+<div id="crop-modal" class="crop-modal" hidden>
+  <div class="crop-box">
+    <h3 data-i18n="cropTitle">✂ Crop</h3>
+    <div class="crop-stage"><canvas id="crop-canvas"></canvas></div>
+    <p class="crop-hint" data-i18n="cropHint">Drag inside to move, drag corners to resize. Drag outside the box to draw a new area</p>
+    <div class="crop-actions">
+      <button id="btn-crop-reset" type="button" class="btn-sub" data-i18n="cropReset">Reset</button>
+      <span class="crop-spacer"></span>
+      <button id="btn-crop-cancel" type="button" class="btn-sub" data-i18n="cropCancel">Cancel</button>
+      <button id="btn-crop-apply" type="button" class="btn-main" data-i18n="cropApply">Use this area</button>
+    </div>
+  </div>
+</div>
+
+<script src="../palettes.js?v=1784277407"></script>
+<script src="../config.js?v=1784277407"></script>
+<script src="../app.js?v=1784277407"></script>
+</body>
+</html>

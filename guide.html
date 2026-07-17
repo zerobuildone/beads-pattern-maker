@@ -41,7 +41,7 @@
  ]
 }
 </script>
-<link rel="stylesheet" href="style.css?v=1784277219">
+<link rel="stylesheet" href="style.css?v=1784277407">
 </head>
 <body class="guide-page">
 
@@ -155,8 +155,11 @@
 (function () {
   var L = "ja";
   try {
+    /* botはnavigator判定させない（Googlebotは米国環境で描画するため、日本語既定を維持） */
+    var isBot = /bot|crawl|spider|slurp|headless|lighthouse|prerender/i.test(navigator.userAgent);
     L = localStorage.getItem("beads_lang") ||
-      ((navigator.language || "ja").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+      (isBot ? "ja" :
+        ((navigator.language || "ja").toLowerCase().indexOf("ja") === 0 ? "ja" : "en"));
   } catch (e) { /* no-op */ }
   document.documentElement.dataset.lang = L;
   document.documentElement.lang = L;

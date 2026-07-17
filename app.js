@@ -666,6 +666,11 @@ function bestPeriod(E) {
     }
     if (n < 4) return -1;
     if (hits / n < 0.3) return -1;
+    // 全エッジエネルギーの過半が格子窓の中に無い候補は却下する。
+    // 写真は「ほぼゼロ＋数本の強い輪郭」という疎なプロファイルになるため、
+    // その数本をたまたま拾う大周期が分母≈0で高スコアを出してしまう。
+    // 本物のドット絵はエッジがほぼ全てマス境界に集中するのでこの条件は余裕で満たす
+    if (exclSum < total * 0.5) return -1;
     const offCnt = Math.max(1, (len - 1) - exclCnt);
     const offMean = Math.max(0, total - exclSum) / offCnt;
     return (gmaxSum / n) / (offMean + eps);
@@ -744,6 +749,47 @@ function buildElasticCuts(E, s, o, len) {
 // ドット絵の格子を検出。失敗時 null
 // X/Y相互検証: 両軸の間隔比が1.8超なら細かい方を信用、片軸失敗なら他軸の間隔を借りる。
 // 周期が見つからなくても「小さくて色数の少ない画像」は原寸スプライト（1ドット=1px）とみなす
+// 格子の意味検証: ドット絵なら「マスの中は一色」なので、格子を半マスずらすと
+// マス内に隣のドットが混ざって乱れ（中心色との差）が跳ね上がる。
+// 写真はどこで切っても乱れが同じ＝格子に意味が無いので、この対比が出ない。
+// エッジ周期の統計だけでは写真の偶然の周期を除けないため、内容そのもので最終確認する
+function gridMeaning(src, sw, box, sx, ox, sy, oy) {
+  const impurity = (shift) => {
+    let sum = 0, cells = 0;
+    const insX = sx >= 4 ? sx * 0.3 : 0;
+    const insY = sy >= 4 ? sy * 0.3 : 0;
+    const stepX = Math.max(1, Math.floor(sx / 3));
+    const stepY = Math.max(1, Math.floor(sy / 3));
+    for (let gy = 0; ; gy++) {
+      const y0 = box.y0 + oy + gy * sy + (shift ? sy / 2 : 0);
+      if (y0 + sy > box.y0 + box.h) break;
+      for (let gx = 0; ; gx++) {
+        const x0 = box.x0 + ox + gx * sx + (shift ? sx / 2 : 0);
+        if (x0 + sx > box.x0 + box.w) break;
+        const cx = Math.min(sw - 1, Math.round(x0 + sx / 2));
+        const cy = Math.round(y0 + sy / 2);
+        const c = (cy * sw + cx) * 4;
+        if (src[c + 3] < 128) continue;
+        let d = 0, n = 0;
+        for (let y = Math.ceil(y0 + insY); y < y0 + sy - insY; y += stepY) {
+          for (let x = Math.ceil(x0 + insX); x < x0 + sx - insX; x += stepX) {
+            const p = (y * sw + x) * 4;
+            if (src[p + 3] < 128) continue;
+            d += Math.abs(src[p] - src[c]) + Math.abs(src[p + 1] - src[c + 1]) + Math.abs(src[p + 2] - src[c + 2]);
+            n++;
+          }
+        }
+        if (n) { sum += d / n; cells++; }
+      }
+      if (cells > 4000) break; // サンプルは十分
+    }
+    return cells ? sum / cells : 0;
+  };
+  const aligned = impurity(false);
+  const shifted = impurity(true);
+  return shifted > aligned * 1.35 + 6;
+}
+
 function detectGrid(src, sw, sh) {
   const box = cropBox(src, sw, sh);
   const Ex = edgeProfile(src, sw, box, true);
@@ -771,7 +817,8 @@ function detectGrid(src, sw, sh) {
     // 例: キングスライムの王冠・口・体の横エッジが「4×5ドット」に化けた）。
     // 8×8マス未満の小さい格子は、両軸が独立に合格した場合だけドット絵と認める
     // （片軸だけ合格→他軸借用のルートは、大きな格子でのみ許す）
-    if ((dw >= 8 && dh >= 8) || (okx && oky)) {
+    if (((dw >= 8 && dh >= 8) || (okx && oky)) &&
+        gridMeaning(src, sw, box, px.s, px.o, py.s, py.o)) {
       return { box, px, py, cutsX, cutsY, dw, dh };
     }
   }

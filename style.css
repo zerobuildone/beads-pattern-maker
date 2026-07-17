@@ -99,7 +99,9 @@ main { max-width: 900px; margin: 0 auto; padding: 8px 20px; }
   main { max-width: 1680px; }
   .workspace {
     display: grid;
-    grid-template-columns: minmax(320px, 400px) minmax(340px, 1fr) minmax(340px, 430px);
+    /* fr比率ベース＝列幅が「中身の量」に依存しない。
+       変換完了・詳細設定の開閉・ビーズ一覧の増減で列やボタンが動かないように */
+    grid-template-columns: minmax(300px, 0.8fr) minmax(340px, 1.3fr) minmax(340px, 0.95fr);
     gap: 22px;
     align-items: start;
   }

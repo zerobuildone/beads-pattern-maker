@@ -766,7 +766,14 @@ function detectGrid(src, sw, sh) {
     }
     const cutsX = buildElasticCuts(Ex, px.s, px.o, box.w);
     const cutsY = buildElasticCuts(Ey, py.s, py.o, box.h);
-    return { box, px, py, cutsX, cutsY, dw: cutsX.length - 1, dh: cutsY.length - 1 };
+    const dw = cutsX.length - 1, dh = cutsY.length - 1;
+    // マス数が少ない格子ほど誤検出しやすい（イラストの太い輪郭や帯が偶然作る大周期。
+    // 例: キングスライムの王冠・口・体の横エッジが「4×5ドット」に化けた）。
+    // 8×8マス未満の小さい格子は、両軸が独立に合格した場合だけドット絵と認める
+    // （片軸だけ合格→他軸借用のルートは、大きな格子でのみ許す）
+    if ((dw >= 8 && dh >= 8) || (okx && oky)) {
+      return { box, px, py, cutsX, cutsY, dw, dh };
+    }
   }
   // 原寸スプライト判定: レトロゲームのドット絵等は1ドット=1pxで周期構造を持たない。
   // 小さい（ビーズ図案の上限200以下）かつ低色数（≤256色）なら1px=1ドットで採用。

@@ -1780,13 +1780,24 @@ function render() {
     }
   }
 
-  // 色リストのホバー中はその色以外を淡くする（どのマスがその色か一目で分かる）
+  // 色リストのホバー中はその色以外を淡くし、該当マスを赤枠で縁取る
+  // （白系の色でも「薄くなった他色」と見分けられるように枠が必須）
   if (state.highlight >= 0) {
     ctx.fillStyle = "rgba(244,241,234,0.78)";
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         const v = grid[y * W + x];
         if (v >= 0 && v !== state.highlight) ctx.fillRect(x * cs, y * cs, cs, cs);
+      }
+    }
+    ctx.strokeStyle = "rgba(232,68,58,.95)";
+    ctx.lineWidth = Math.max(1.5, cs * 0.14);
+    const inset = ctx.lineWidth / 2;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (grid[y * W + x] === state.highlight) {
+          ctx.strokeRect(x * cs + inset, y * cs + inset, cs - inset * 2, cs - inset * 2);
+        }
       }
     }
   }

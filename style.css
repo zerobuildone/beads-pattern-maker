@@ -353,6 +353,14 @@ body.symbols-on #legend-table .col-sym { display: table-cell; }
 .field-check { display: flex; align-items: center; gap: 7px; font-size: .9rem; cursor: pointer; }
 .field-check input { width: 16px; height: 16px; accent-color: var(--accent); }
 
+/* ブランド変更時の手直し引き継ぎ通知 */
+.carry-note {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  border: 2px solid var(--ink); background: #fff7dc; box-shadow: var(--shadow);
+  padding: 8px 10px; margin-bottom: 10px; font-size: .85rem;
+}
+.carry-note[hidden] { display: none; }
+
 /* 手直しパネル: 手直しモードON中だけ表示（ツール類を1か所に集約） */
 .edit-panel {
   display: none;

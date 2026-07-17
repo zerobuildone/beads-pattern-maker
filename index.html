@@ -220,6 +220,12 @@
     <h2><span class="step-num">3</span><span data-i18n="step3">図案</span></h2>
 
     <div id="pattern-pane">
+    <!-- ブランド変更時: 手直しを引き継いだ旨と破棄の選択肢 -->
+    <div id="carry-note" class="carry-note" hidden>
+      <span data-i18n="carryMsg">✏ 手直しの内容を、新しいビーズの近い色で引き継ぎました</span>
+      <button id="btn-carry-discard" type="button" class="btn-sub" data-i18n="carryDiscard">手直しを破棄して自動変換に戻す</button>
+      <button id="btn-carry-keep" type="button" class="btn-sub" data-i18n="carryKeep">このまま</button>
+    </div>
     <div id="canvas-wrap">
       <canvas id="pattern-canvas"></canvas>
     </div>

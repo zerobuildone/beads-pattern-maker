@@ -825,6 +825,7 @@ const state = {
   painting: null,
   editLog: new Map(), // 手直しログ: マス番号 -> {c:色コード, rgb} / null=消しゴム
   editW: 0, editH: 0, // ログが有効な図案サイズ（変わったらログは破棄）
+  editSeries: null,   // 手直しを行ったブランド/サイズ（変わったら引き継ぎ通知を出す）
 };
 
 /* ---------- DOM ---------- */
@@ -1007,6 +1008,10 @@ const I18N = {
   toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
   toolReplace: { ja: "⇄ 色置換", en: "⇄ Replace" },
   btnPalette: { ja: "🎨 全色から選ぶ", en: "🎨 Pick from all colors" },
+  carryMsg: { ja: "✏ 手直しの内容を、新しいビーズの近い色で引き継ぎました",
+    en: "✏ Your manual edits were carried over using the closest colors in the new palette" },
+  carryDiscard: { ja: "手直しを破棄して自動変換に戻す", en: "Discard edits & reconvert" },
+  carryKeep: { ja: "このまま", en: "Keep them" },
   tbPenSize: { ja: "太さ", en: "Size" },
   mbSettings: { ja: "設定", en: "Settings" },
   mbBeads: { ja: "ビーズ一覧", en: "Beads" },
@@ -1200,6 +1205,8 @@ function loadFile(file) {
     state.img = img;
     state.editLog.clear(); // 別画像の手直しを持ち越さない
     state.editW = state.editH = 0;
+    state.editSeries = null;
+    carryNote.hidden = true;
     srcPreview.src = url;
     srcPreviewWrap.hidden = false;
     dropzone.hidden = true;
@@ -1256,6 +1263,8 @@ $("btn-clear-image").addEventListener("click", () => {
   state.grid = null;
   state.editLog.clear();
   state.editW = state.editH = 0;
+  state.editSeries = null;
+  carryNote.hidden = true;
   srcPreviewWrap.hidden = true;
   detectBanner.hidden = true;
   lastBanner = null;
@@ -1381,6 +1390,7 @@ function saveSession() {
       grid: gridToB64(state.grid),
       // 手直しログ（[i]=消しゴム / [i,コード,r,g,b]=塗り）。復元後の設定変更でも手直しが残るように
       edits: [...state.editLog].map(([i, e]) => (e ? [i, e.c, e.rgb[0], e.rgb[1], e.rgb[2]] : [i])),
+      editSeries: state.editSeries,
       banner: lastBanner,
     }));
   } catch (e) { /* 容量超過などは黙って諦める（機能は劣化するが壊れない） */ }
@@ -1427,6 +1437,7 @@ function restoreSession() {
       }
     }
     state.editW = s.W; state.editH = s.H;
+    state.editSeries = s.editSeries || s.series;
     const grid = s.grid && palette.length ? b64ToGrid(s.grid, s.W * s.H) : null;
     if (grid) {
       // 手直しの編集内容ごと復元
@@ -1712,6 +1723,12 @@ function convert() {
   // 図案サイズが変わったときだけ座標の意味が失われるためログを破棄
   if (state.editW !== W || state.editH !== H) state.editLog.clear();
   state.editW = W; state.editH = H;
+  // ブランド/サイズ変更をまたぐ引き継ぎは通知し、ワンタップで破棄できるようにする
+  // （元パレットの不足を補うための応急手直しは、新ブランドでは不要なことがある）
+  if (state.editLog.size && state.editSeries && state.editSeries !== series.key) {
+    carryNote.hidden = false;
+  }
+  if (state.editLog.size) state.editSeries = series.key;
   reapplyEdits(grid, palette, state.editLog);
 
   state.grid = grid;
@@ -2458,6 +2475,16 @@ btnPalette.addEventListener("click", () => {
   if (!palettePop.hidden) buildPalettePop();
 });
 
+// ブランド/サイズ変更時の手直し引き継ぎ通知（破棄はワンタップ）
+const carryNote = $("carry-note");
+$("btn-carry-discard").addEventListener("click", () => {
+  state.editLog.clear();
+  state.editSeries = null;
+  carryNote.hidden = true;
+  convert();
+});
+$("btn-carry-keep").addEventListener("click", () => { carryNote.hidden = true; });
+
 function updatePenStatus() {
   $("btn-pen-erase").classList.toggle("active", state.pen === -1);
   if (state.pen === -2) {
@@ -2506,6 +2533,7 @@ function floodIndices(grid, W, H, start) {
 // 手直しログへ記録: ユーザーが選んだ内容を色コード+RGBで覚える（消しゴムはnull）。
 // palette index ではなくコードで持つことで、再変換・ブランド変更後も対応付けできる
 function logEdit(j, val) {
+  if (!state.editLog.size && state.series) state.editSeries = state.series.key;
   const prev = state.editLog.has(j) ? state.editLog.get(j) : undefined;
   state.editLog.set(j, val >= 0 ? { c: state.palette[val].c, rgb: state.palette[val].rgb } : null);
   return prev; // undo用に「記録前の状態」を返す（undefined=未記録だった）

@@ -1000,11 +1000,13 @@ const I18N = {
   penPrefix: { ja: "ペン:", en: "Pen:" },
   btnEraser: { ja: "消しゴム", en: "Eraser" },
   btnUndo: { ja: "元に戻す", en: "Undo" },
-  editHint: { ja: "手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧から選択・右クリックでスポイト）。OFFなら通常のスクロール操作",
-    en: "Painting works only while Edit mode is ON (pick colors from the bead list, right-click to eyedrop). When OFF, touches scroll normally" },
+  editHint: { ja: "手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧か「🎨全色」から選択・右クリックでスポイト）。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます。OFFなら通常のスクロール操作",
+    en: "Painting works only while Edit mode is ON (pick colors from the bead list or the 🎨 palette, right-click to eyedrop). \"⇄ Replace\" swaps every cell of the tapped color to the pen color. When OFF, touches scroll normally" },
   tbEditMode: { ja: "✏ 手直しモード", en: "✏ Edit mode" },
   toolPen: { ja: "✎ ペン", en: "✎ Pen" },
   toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
+  toolReplace: { ja: "⇄ 色置換", en: "⇄ Replace" },
+  btnPalette: { ja: "🎨 全色", en: "🎨 All colors" },
   tbPenSize: { ja: "太さ", en: "Size" },
   mbSettings: { ja: "設定", en: "Settings" },
   mbBeads: { ja: "ビーズ一覧", en: "Beads" },
@@ -2415,7 +2417,34 @@ function setPen(idx) {
   updatePenStatus();
   legendBody.querySelectorAll("tr").forEach((tr) =>
     tr.classList.toggle("pen-active", +tr.dataset.idx === idx));
+  palettePop.querySelectorAll(".pp-sw").forEach((b) =>
+    b.classList.toggle("pen-active", +b.dataset.idx === idx));
 }
+
+// 全色パレット: 使用中の色に限らず、選択中ブランド・サイズの全色からペンの色を選べる
+const btnPalette = $("btn-palette");
+const palettePop = $("palette-pop");
+function buildPalettePop() {
+  palettePop.innerHTML = "";
+  const used = new Set();
+  if (state.grid) for (const v of state.grid) if (v >= 0) used.add(v);
+  state.palette.forEach((c, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pp-sw" + (i === state.pen ? " pen-active" : "");
+    b.style.background = `rgb(${c.rgb[0]},${c.rgb[1]},${c.rgb[2]})`;
+    b.title = `${c.c} ${dispName(c)}` +
+      (used.has(i) ? "" : (LANG === "ja" ? "（未使用）" : " (unused)"));
+    b.dataset.idx = i;
+    b.addEventListener("click", () => { setPen(i); palettePop.hidden = true; });
+    palettePop.appendChild(b);
+  });
+}
+btnPalette.addEventListener("click", () => {
+  if (!state.palette.length) return;
+  palettePop.hidden = !palettePop.hidden;
+  if (!palettePop.hidden) buildPalettePop();
+});
 
 function updatePenStatus() {
   if (state.pen === -2) {
@@ -2505,19 +2534,38 @@ function fillAt(i) {
   commitPaint();
 }
 
+// 色の一括置換: タップしたマスの色を、図案全体でペンの色に置き換える（1回のundoで戻せる）
+function replaceColorAt(i) {
+  if (i < 0 || state.pen === -2) return;
+  const val = state.pen === -1 ? -1 : state.pen;
+  const from = state.grid[i];
+  if (from < 0 || from === val) return; // 透過マスは対象外（背景の全置換事故を防ぐ）
+  state.painting = [];
+  for (let j = 0; j < state.grid.length; j++) {
+    if (state.grid[j] !== from) continue;
+    state.painting.push({ i: j, old: from, oldLog: logEdit(j, val) });
+    state.grid[j] = val;
+  }
+  render();
+  commitPaint();
+}
+
 const chkEditMode = $("chk-editmode");
 const editingOn = () => chkEditMode.checked && state.pen !== -2;
 chkEditMode.addEventListener("change", () => {
   document.body.classList.toggle("edit-on", chkEditMode.checked);
+  if (!chkEditMode.checked) palettePop.hidden = true;
 });
 
-// ツール切替（ペン / 塗りつぶし）とペンの太さ
+// ツール切替（ペン / 塗りつぶし / 色置換）とペンの太さ
 $("tool-pen").addEventListener("click", () => setTool("pen"));
 $("tool-fill").addEventListener("click", () => setTool("fill"));
+$("tool-replace").addEventListener("click", () => setTool("replace"));
 function setTool(t) {
   state.tool = t;
   $("tool-pen").classList.toggle("active", t === "pen");
   $("tool-fill").classList.toggle("active", t === "fill");
+  $("tool-replace").classList.toggle("active", t === "replace");
 }
 document.querySelectorAll(".pen-size-btn").forEach((b) =>
   b.addEventListener("click", () => {
@@ -2529,6 +2577,10 @@ document.querySelectorAll(".pen-size-btn").forEach((b) =>
 canvas.addEventListener("mousedown", (e) => {
   if (e.button !== 0 || !state.grid) return;
   if (!editingOn()) return;
+  if (state.tool === "replace") {
+    replaceColorAt(cellFromEvent(e));
+    return;
+  }
   if (state.tool === "fill") {
     fillAt(cellFromEvent(e));
     return;
@@ -2555,6 +2607,10 @@ window.addEventListener("mouseup", commitPaint);
 canvas.addEventListener("touchstart", (e) => {
   if (!state.grid || !editingOn()) return;
   e.preventDefault();
+  if (state.tool === "replace") {
+    replaceColorAt(cellFromEvent(e.touches[0]));
+    return;
+  }
   if (state.tool === "fill") {
     fillAt(cellFromEvent(e.touches[0]));
     return;

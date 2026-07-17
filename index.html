@@ -46,7 +46,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1784269117">
+<link rel="stylesheet" href="style.css?v=1784269624">
 </head>
 <body>
 <noscript><p style="padding:16px;text-align:center">このツールはブラウザ内で画像を変換するため、JavaScriptを有効にしてご利用ください。/ This tool converts images in your browser and requires JavaScript.</p></noscript>
@@ -115,12 +115,20 @@
     <!-- しあがり: 見た目に直結する「好みで選ぶ」設定だけを常時表示 -->
     <div class="finish-block">
       <h3 class="finish-title" data-i18n="groupFinish">🎨 しあがり</h3>
+      <label class="field finish-colors">
+        <span class="field-label"><span data-i18n="tbColors">色数</span>　<span id="colors-label" class="colors-label">自動</span></span>
+        <input type="range" id="rng-colors" min="0" max="6" step="1" value="5">
+      </label>
       <label class="field-check">
         <input type="checkbox" id="chk-whitebg">
         <span data-i18n="optWhitebg">背景を透過する（白い余白をビーズなしに）</span>
       </label>
-      <div class="outline-row" id="outline-color-row">
-        <label for="sel-outline-color" data-i18n="optOutlineColor">縁取り</label>
+      <label class="field-check">
+        <input type="checkbox" id="chk-addoutline">
+        <span data-i18n="optAddOutline">縁取りをつける</span>
+      </label>
+      <div class="outline-row" id="outline-color-row" hidden>
+        <label for="sel-outline-color" data-i18n="optOutlineColor">縁取りの色</label>
         <span class="outline-swatch" id="outline-swatch"></span>
         <select id="sel-outline-color"></select>
       </div>
@@ -239,14 +247,8 @@
     </div>
 
     <div class="result-toolbar">
-      <div class="tb-group tb-colors">
-        <span class="tb-label" data-i18n="tbColors">色数</span>
-        <input type="range" id="rng-colors" min="0" max="6" step="1" value="5">
-        <span id="colors-label" class="colors-label">自動</span>
-      </div>
       <div class="tb-group">
-        <span class="tb-label" data-i18n="tbView">表示</span>
-        <label><span data-i18n="tbZoom">大きさ</span> <input type="range" id="rng-zoom" min="2" max="30" value="14"></label>
+        <label title="ズーム">🔍 <input type="range" id="rng-zoom" min="2" max="30" value="14"></label>
         <label class="field-check"><input type="checkbox" id="chk-grid" checked><span data-i18n="tbGrid">グリッド</span></label>
         <label class="field-check"><input type="checkbox" id="chk-symbols"><span data-i18n="tbSymbols">色記号</span></label>
       </div>
@@ -347,8 +349,8 @@
   </div>
 </footer>
 
-<script src="palettes.js?v=1784269117"></script>
-<script src="config.js?v=1784269117"></script>
-<script src="app.js?v=1784269117"></script>
+<script src="palettes.js?v=1784269624"></script>
+<script src="config.js?v=1784269624"></script>
+<script src="app.js?v=1784269624"></script>
 </body>
 </html>

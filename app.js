@@ -858,8 +858,10 @@ const chkCleanup = $("chk-cleanup");
 const chkSpecial = $("chk-special");
 const chkShading = $("chk-shading");
 const chkDitherMix = $("chk-dithermix");
+const chkAddOutline = $("chk-addoutline");
 const selOutlineColor = $("sel-outline-color");
 const outlineSwatch = $("outline-swatch");
+const outlineColorRow = $("outline-color-row");
 
 // 選択シリーズの「実際に配色へ使うパレット」。
 // ラメ・夜光・透明系(sp)は実物の見え方が別物なので、チェックONの時だけ含める
@@ -876,16 +878,12 @@ function activePalette(seriesKey, useSpecial) {
 let outlineCode = null;
 function refreshOutlineOptions(palette) {
   selOutlineColor.innerHTML = "";
-  // 「なし」「自動(selout)」を先頭に、続けてパレット全色。1つのセレクトで完結させる
-  const none = document.createElement("option");
-  none.value = "none";
-  none.textContent = T("optOutlineNone");
-  selOutlineColor.appendChild(none);
+  // 先頭は「自動(selout)」、続けてパレット全色。ON/OFFはチェックボックス側が担当
   const auto = document.createElement("option");
   auto.value = "auto";
   auto.textContent = T("optOutlineAuto");
   selOutlineColor.appendChild(auto);
-  let selVal = null, black = -1;
+  let selVal = null, black = -1, darkest = 0;
   for (let i = 0; i < palette.length; i++) {
     const c = palette[i];
     const opt = document.createElement("option");
@@ -894,20 +892,20 @@ function refreshOutlineOptions(palette) {
     opt.dataset.rgb = c.rgb.join(",");
     opt.dataset.code = c.c;
     selOutlineColor.appendChild(opt);
-    if (selVal == null && outlineCode != null && outlineCode !== "auto" && outlineCode !== "none" && c.c === outlineCode) selVal = String(i);
+    if (selVal == null && outlineCode != null && outlineCode !== "auto" && c.c === outlineCode) selVal = String(i);
     if (black < 0 && !c.rgb[0] && !c.rgb[1] && !c.rgb[2]) black = i;
+    if (c.lab[0] < palette[darkest].lab[0]) darkest = i;
   }
   if (!palette.length) return;
   if (outlineCode === "auto") selVal = "auto";
-  else if (outlineCode == null || outlineCode === "none") selVal = "none";
-  else if (selVal == null) selVal = black >= 0 ? String(black) : "none"; // ブランド変更で色が無い→くろへ
+  else if (selVal == null) selVal = String(black >= 0 ? black : darkest); // 既定・ブランド変更時はくろ
   selOutlineColor.value = selVal;
-  outlineCode = selVal === "auto" || selVal === "none" ? selVal : palette[+selVal].c;
+  outlineCode = selVal === "auto" ? "auto" : palette[+selVal].c;
   updateOutlineSwatch();
 }
 function updateOutlineSwatch() {
   const opt = selOutlineColor.selectedOptions[0];
-  outlineSwatch.style.background = !opt || opt.value === "none" ? "#fff" :
+  outlineSwatch.style.background = !opt ? "transparent" :
     (opt.value === "auto" ? "linear-gradient(135deg,#777,#1a1a1a)" : `rgb(${opt.dataset.rgb})`);
 }
 const chkDither = $("chk-dither");
@@ -1003,13 +1001,11 @@ const I18N = {
     en: "Preserve shading (spread tones across similar beads)" },
   optDitherMix: { ja: "まざり色（2色を市松に並べて中間色を作る）",
     en: "Blend colors (checkerboard two beads to create in-between tones)" },
-  optOutlineNone: { ja: "なし", en: "None" },
   optOutlineAuto: { ja: "自動（場所ごとの最暗色・おすすめ）", en: "Auto (darkest tone of each area)" },
   groupFinish: { ja: "🎨 しあがり", en: "🎨 Finishing" },
   optQualityTitle: { ja: "変換の品質（通常はONのまま）", en: "Conversion quality (leave ON normally)" },
-  optAddOutline: { ja: "図案のふちに縁取りを追加（アウトライン）",
-    en: "Add an outline along the pattern edge" },
-  optOutlineColor: { ja: "縁取り", en: "Outline" },
+  optAddOutline: { ja: "縁取りをつける", en: "Add outline" },
+  optOutlineColor: { ja: "縁取りの色", en: "Outline color" },
   lblMaxColors: { ja: "使う色数の上限", en: "Max colors" },
   mcNone: { ja: "制限なし", en: "No limit" },
   mc8: { ja: "8色まで", en: "Up to 8" },
@@ -1332,9 +1328,13 @@ document.querySelectorAll(".chip").forEach((chip) => {
 
 [chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg, chkShading, chkDitherMix].forEach((el) =>
   el.addEventListener("change", scheduleConvert));
+chkAddOutline.addEventListener("change", () => {
+  outlineColorRow.hidden = !chkAddOutline.checked;
+  scheduleConvert();
+});
 selOutlineColor.addEventListener("change", () => {
   const o = selOutlineColor.selectedOptions[0];
-  outlineCode = !o ? "none" : (o.value === "auto" || o.value === "none" ? o.value : o.dataset.code);
+  outlineCode = !o ? null : (o.value === "auto" ? "auto" : o.dataset.code);
   updateOutlineSwatch();
   scheduleConvert();
 });
@@ -1408,6 +1408,7 @@ function saveSession() {
       special: chkSpecial.checked,
       shading: chkShading.checked,
       ditherMix: chkDitherMix.checked,
+      addOutline: chkAddOutline.checked,
       outlineColor: outlineCode,
       plate: selPlate.value,
       colorsIdx: +rngColors.value,
@@ -1444,8 +1445,12 @@ function restoreSession() {
     chkSpecial.checked = !!s.special;
     chkShading.checked = s.shading !== false;
     chkDitherMix.checked = !!s.ditherMix;
-    outlineCode = s.outlineColor || "none";
-    if (s.addOutline === false) outlineCode = "none"; // 旧形式セッションとの互換
+    // 縁取り: addOutline がある形式が正。無い旧形式は outlineColor の値から推定
+    chkAddOutline.checked = s.addOutline !== undefined
+      ? !!s.addOutline
+      : !!(s.outlineColor && s.outlineColor !== "none");
+    outlineColorRow.hidden = !chkAddOutline.checked;
+    if (s.outlineColor && s.outlineColor !== "none") outlineCode = s.outlineColor;
     selPlate.value = s.plate || "0";
     rngColors.value = String(s.colorsIdx == null ? 5 : s.colorsIdx);
     updateColorsLabel();
@@ -1744,9 +1749,8 @@ function convert() {
 
   // 縁取り: ビーズなしマス（図案の外周含む）に接する縁のマスをアウトライン色へ置き換える
   // （「自動」= selout: その場所の色の同系最暗色で縁取る）
-  const outlineVal = selOutlineColor.value;
-  if (outlineVal && outlineVal !== "none") {
-    applyOutline(grid, W, H, outlineVal === "auto" ? -1 : +outlineVal, palette);
+  if (chkAddOutline.checked && selOutlineColor.value) {
+    applyOutline(grid, W, H, selOutlineColor.value === "auto" ? -1 : +selOutlineColor.value, palette);
   }
 
   // 手直しの再適用: 設定を変えて再変換しても、手で塗った/消したマスは維持する。

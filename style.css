@@ -410,6 +410,9 @@ body.edit-on .edit-panel { display: block; }
   padding: 12px 14px; margin: 14px 0 4px;
 }
 .finish-title { margin: 0 0 2px; font-size: .92rem; }
+.finish-colors { display: flex; flex-direction: column; gap: 4px; }
+.finish-colors input[type="range"] { width: 100%; }
+.finish-block .outline-row { margin-left: 23px; }
 
 /* 詳細設定内の「変換の品質」小グループ */
 .quality-sub {

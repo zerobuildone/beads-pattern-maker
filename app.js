@@ -2233,10 +2233,32 @@ $("btn-dl-png").addEventListener("click", () => {
     c2.fillText(`${symOf(idx)}  ${col.c}  ${dispName(col)} ${brand} ×${count}`, margin + 28, ly);
   }
 
-  const a = document.createElement("a");
-  a.download = `beads_${W}x${H}.png`;
-  a.href = cv.toDataURL("image/png");
-  a.click();
+  // 保存: スマホは <a download>+dataURL が失敗しやすい（特にiOS Safari）ため、
+  // OSの共有シート（→「画像を保存」）を優先し、非対応環境はBlobダウンロードにフォールバック
+  const fname = `beads_${W}x${H}.png`;
+  cv.toBlob(async (blob) => {
+    if (!blob) return;
+    if (!CAN_HOVER && navigator.canShare) {
+      try {
+        const file = new File([blob], fname, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fname });
+          return;
+        }
+      } catch (err) {
+        if (err && err.name === "AbortError") return; // ユーザーがキャンセルしただけ
+        // 共有に失敗したら通常ダウンロードへ
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.download = fname;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }, "image/png");
 });
 
 

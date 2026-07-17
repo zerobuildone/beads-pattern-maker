@@ -363,9 +363,18 @@ function beadDist(lab, plab) {
   const cc = Math.hypot(plab[1], plab[2]);
   const lo = Math.min(cs, cc), hi = Math.max(cs, cc);
   if (lo < 6 && hi > 12) d += (hi - 12) * 0.5;
-  // 肌色のマスには黄土系を避ける補正。人は顔には多少色差があっても桃色寄りを選ぶ。
-  // +6に留めることで、本当にタン色の物体（砂・ベージュの服等）は正確一致が勝つ
-  if (isSkinTone(lab) && isMuddyBead(plab)) d += 6;
+  if (isSkinTone(lab)) {
+    // 肌色のマスには黄土系を避ける補正。人は顔には多少色差があっても桃色寄りを選ぶ。
+    // +6に留めることで、本当にタン色の物体（砂・ベージュの服等）は正確一致が勝つ
+    if (isMuddyBead(plab)) d += 6;
+  } else if (cs >= 15 && cc >= 15) {
+    // 同点勝負の決め手は色相: ΔE00は「明度が少し近いカーキ」と「色相が合う緑」を
+    // ほぼ同点にするが、人の目には色相のズレ（緑→黄土等）の方が「汚れ」に見える。
+    // 15°以内は無罰＝正当な近縁色（エバーグリーン等）の選択には影響しない
+    let dh = Math.abs(Math.atan2(lab[2], lab[1]) - Math.atan2(plab[2], plab[1])) * 180 / Math.PI;
+    if (dh > 180) dh = 360 - dh;
+    if (dh > 15) d += (dh - 15) * 0.3;
+  }
   return d;
 }
 

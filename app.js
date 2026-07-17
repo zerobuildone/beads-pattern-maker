@@ -373,7 +373,7 @@ function beadDist(lab, plab) {
     // 15°以内は無罰＝正当な近縁色（エバーグリーン等）の選択には影響しない
     let dh = Math.abs(Math.atan2(lab[2], lab[1]) - Math.atan2(plab[2], plab[1])) * 180 / Math.PI;
     if (dh > 180) dh = 360 - dh;
-    if (dh > 15) d += (dh - 15) * 0.3;
+    if (dh > 15) d += (dh - 15) * 0.35;
   }
   return d;
 }

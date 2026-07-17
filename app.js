@@ -781,6 +781,8 @@ const state = {
   symMap: new Map(), // palette index -> 図案記号（変換ごとに一意割当）
   highlight: -1,     // 色リストのホバーで該当色セルを強調表示
   pen: -2,           // -2:未選択 -1:消しゴム 0以上:palette index
+  tool: "pen",       // "pen" | "fill"（塗りつぶし）
+  penSize: 1,        // ペンの太さ 1/2/3
   undoStack: [],
   painting: null,
 };
@@ -910,6 +912,9 @@ const I18N = {
   editHint: { ja: "手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧から選択・右クリックでスポイト）。OFFなら通常のスクロール操作",
     en: "Painting works only while Edit mode is ON (pick colors from the bead list, right-click to eyedrop). When OFF, touches scroll normally" },
   tbEditMode: { ja: "✏ 手直しモード", en: "✏ Edit mode" },
+  toolPen: { ja: "✎ ペン", en: "✎ Pen" },
+  toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
+  tbPenSize: { ja: "太さ", en: "Size" },
   mbSettings: { ja: "設定", en: "Settings" },
   mbBeads: { ja: "ビーズ一覧", en: "Beads" },
   btnDlPng: { ja: "図案PNGを保存", en: "Save pattern PNG" },
@@ -2105,13 +2110,58 @@ function cellFromEvent(e) {
   return y * state.W + x;
 }
 
+// 同色でつながった領域のセル番号一覧（塗りつぶし用・4方向連結）
+function floodIndices(grid, W, H, start) {
+  const target = grid[start];
+  const out = [];
+  const seen = new Uint8Array(W * H);
+  const queue = [start];
+  seen[start] = 1;
+  while (queue.length) {
+    const i = queue.pop();
+    out.push(i);
+    const x = i % W, y = (i / W) | 0;
+    for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, y > 0 ? i - W : -1, y < H - 1 ? i + W : -1]) {
+      if (j >= 0 && !seen[j] && grid[j] === target) { seen[j] = 1; queue.push(j); }
+    }
+  }
+  return out;
+}
+
 function paintCell(i) {
   if (i < 0 || state.pen === -2) return;
   const val = state.pen === -1 ? -1 : state.pen;
+  const { W, H } = state;
+  const x0 = i % W, y0 = (i / W) | 0;
+  const size = state.penSize || 1;
+  const off = size === 3 ? -1 : 0; // 太さ2は右下方向へ、3は中心に広げる
+  let changed = false;
+  for (let dy = off; dy < off + size; dy++) {
+    for (let dx = off; dx < off + size; dx++) {
+      const x = x0 + dx, y = y0 + dy;
+      if (x < 0 || x >= W || y < 0 || y >= H) continue;
+      const j = y * W + x;
+      if (state.grid[j] === val) continue;
+      state.painting.push({ i: j, old: state.grid[j] });
+      state.grid[j] = val;
+      changed = true;
+    }
+  }
+  if (changed) render();
+}
+
+// 塗りつぶし: タップしたマスと同色の連結領域を一括置換（1回で1バッチ=1回のundoで戻せる）
+function fillAt(i) {
+  if (i < 0 || state.pen === -2) return;
+  const val = state.pen === -1 ? -1 : state.pen;
   if (state.grid[i] === val) return;
-  state.painting.push({ i, old: state.grid[i] });
-  state.grid[i] = val;
+  state.painting = [];
+  for (const j of floodIndices(state.grid, state.W, state.H, i)) {
+    state.painting.push({ i: j, old: state.grid[j] });
+    state.grid[j] = val;
+  }
   render();
+  commitPaint();
 }
 
 const chkEditMode = $("chk-editmode");
@@ -2120,14 +2170,33 @@ chkEditMode.addEventListener("change", () => {
   document.body.classList.toggle("edit-on", chkEditMode.checked);
 });
 
+// ツール切替（ペン / 塗りつぶし）とペンの太さ
+$("tool-pen").addEventListener("click", () => setTool("pen"));
+$("tool-fill").addEventListener("click", () => setTool("fill"));
+function setTool(t) {
+  state.tool = t;
+  $("tool-pen").classList.toggle("active", t === "pen");
+  $("tool-fill").classList.toggle("active", t === "fill");
+}
+document.querySelectorAll(".pen-size-btn").forEach((b) =>
+  b.addEventListener("click", () => {
+    state.penSize = +b.dataset.size;
+    document.querySelectorAll(".pen-size-btn").forEach((x) =>
+      x.classList.toggle("active", x === b));
+  }));
+
 canvas.addEventListener("mousedown", (e) => {
   if (e.button !== 0 || !state.grid) return;
   if (!editingOn()) return;
+  if (state.tool === "fill") {
+    fillAt(cellFromEvent(e));
+    return;
+  }
   state.painting = [];
   paintCell(cellFromEvent(e));
 });
 canvas.addEventListener("mousemove", (e) => {
-  if (state.painting && (e.buttons & 1)) paintCell(cellFromEvent(e));
+  if (state.painting && (e.buttons & 1) && state.tool === "pen") paintCell(cellFromEvent(e));
 });
 function commitPaint() {
   if (state.painting && state.painting.length) {
@@ -2145,11 +2214,15 @@ window.addEventListener("mouseup", commitPaint);
 canvas.addEventListener("touchstart", (e) => {
   if (!state.grid || !editingOn()) return;
   e.preventDefault();
+  if (state.tool === "fill") {
+    fillAt(cellFromEvent(e.touches[0]));
+    return;
+  }
   state.painting = [];
   paintCell(cellFromEvent(e.touches[0]));
 }, { passive: false });
 canvas.addEventListener("touchmove", (e) => {
-  if (!state.painting) return;
+  if (!state.painting || state.tool !== "pen") return;
   e.preventDefault();
   paintCell(cellFromEvent(e.touches[0]));
 }, { passive: false });

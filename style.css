@@ -515,6 +515,8 @@ body.edit-on button.edit-only { display: inline-block !important; }
 body.edit-on p.edit-only { display: block !important; }
 
 .pen-status { display: flex; align-items: center; gap: 6px; }
+.tool-btn.active, .pen-size-btn.active { background: var(--ink); color: #fff; }
+.pen-size-btn { min-width: 34px; }
 .pen-swatch {
   display: inline-block; width: 20px; height: 20px;
   border: 2px solid var(--ink); background: #fff;

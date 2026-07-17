@@ -402,8 +402,25 @@ body.edit-on .edit-panel { display: block; }
   .pp-sw { width: 34px; height: 34px; }
 }
 
+/* しあがり: 見た目に直結する設定だけを常時表示するブロック */
+.finish-block {
+  display: flex; flex-direction: column; gap: 9px;
+  border: 2px solid var(--ink); background: #fff;
+  box-shadow: var(--shadow);
+  padding: 12px 14px; margin: 14px 0 4px;
+}
+.finish-title { margin: 0 0 2px; font-size: .92rem; }
+
+/* 詳細設定内の「変換の品質」小グループ */
+.quality-sub {
+  display: flex; flex-direction: column; gap: 7px;
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px dashed rgba(0,0,0,.25);
+}
+.quality-title { font-size: .78rem; color: var(--ink-faint); }
+
 /* 縁取り(アウトライン)の色選択行 */
-.outline-row { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-left: 23px; }
+.outline-row { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
 .outline-row select { flex: 1; min-width: 0; max-width: 240px; }
 .outline-swatch {
   width: 18px; height: 18px; flex: none;

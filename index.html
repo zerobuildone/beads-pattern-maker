@@ -46,7 +46,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1784268278">
+<link rel="stylesheet" href="style.css?v=1784269117">
 </head>
 <body>
 <noscript><p style="padding:16px;text-align:center">このツールはブラウザ内で画像を変換するため、JavaScriptを有効にしてご利用ください。/ This tool converts images in your browser and requires JavaScript.</p></noscript>
@@ -112,10 +112,28 @@
     </div>
     <div id="mix-note" class="mix-note" hidden></div>
 
+    <!-- しあがり: 見た目に直結する「好みで選ぶ」設定だけを常時表示 -->
+    <div class="finish-block">
+      <h3 class="finish-title" data-i18n="groupFinish">🎨 しあがり</h3>
+      <label class="field-check">
+        <input type="checkbox" id="chk-whitebg">
+        <span data-i18n="optWhitebg">背景を透過する（白い余白をビーズなしに）</span>
+      </label>
+      <div class="outline-row" id="outline-color-row">
+        <label for="sel-outline-color" data-i18n="optOutlineColor">縁取り</label>
+        <span class="outline-swatch" id="outline-swatch"></span>
+        <select id="sel-outline-color"></select>
+      </div>
+      <label class="field-check">
+        <input type="checkbox" id="chk-dithermix">
+        <span data-i18n="optDitherMix">まざり色（2色を市松に並べて中間色を作る）</span>
+      </label>
+    </div>
+
     <button id="btn-advanced" type="button" class="btn-adv">
       <span class="adv-arrow">▸</span>
       <span class="adv-title">⚙ <span data-i18n="btnAdvanced">詳細設定</span></span>
-      <span class="adv-hint" data-i18n="advHint">画像タイプ・輪郭・ディザ・サイズの数値指定など、手動で調整したい人向け</span>
+      <span class="adv-hint" data-i18n="advHint">画像タイプ・サイズの数値指定・変換品質など、通常は触らなくてよい設定</span>
     </button>
 
     <div id="advanced-panel" class="adv">
@@ -181,9 +199,12 @@
               <span data-i18n="optDither">ディザリング（2色を混ぜ打ちして中間色を表現）</span>
             </label>
             <label class="field-check">
-              <input type="checkbox" id="chk-whitebg">
-              <span data-i18n="optWhitebg">背景（白・余白）をビーズなしにする</span>
+              <input type="checkbox" id="chk-special">
+              <span data-i18n="optSpecial">特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）</span>
             </label>
+          </div>
+          <div class="quality-sub">
+            <span class="quality-title" data-i18n="optQualityTitle">変換の品質（通常はONのまま）</span>
             <label class="field-check">
               <input type="checkbox" id="chk-cleanup" checked>
               <span data-i18n="optCleanup">仕上げの整形（ノイズ粒・浮きビーズを整理）</span>
@@ -192,23 +213,6 @@
               <input type="checkbox" id="chk-shading" checked>
               <span data-i18n="optShading">陰影を保持（明暗の段差を同系の別ビーズへ割り振る）</span>
             </label>
-            <label class="field-check">
-              <input type="checkbox" id="chk-dithermix">
-              <span data-i18n="optDitherMix">ディザ混色（パレットに無い中間色を2色の市松模様で再現）</span>
-            </label>
-            <label class="field-check">
-              <input type="checkbox" id="chk-special">
-              <span data-i18n="optSpecial">特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）</span>
-            </label>
-            <label class="field-check">
-              <input type="checkbox" id="chk-addoutline">
-              <span data-i18n="optAddOutline">図案のふちに縁取りを追加（アウトライン）</span>
-            </label>
-            <div class="outline-row" id="outline-color-row" hidden>
-              <label for="sel-outline-color" data-i18n="optOutlineColor">縁取りの色</label>
-              <span class="outline-swatch" id="outline-swatch"></span>
-              <select id="sel-outline-color"></select>
-            </div>
           </div>
           <button id="btn-convert" type="button" class="btn-sub" disabled data-i18n="btnConvert">再変換する</button>
         </div>
@@ -247,7 +251,7 @@
         <label class="field-check"><input type="checkbox" id="chk-symbols"><span data-i18n="tbSymbols">色記号</span></label>
       </div>
       <div class="tb-group">
-        <label class="field-check edit-toggle"><input type="checkbox" id="chk-editmode"><span data-i18n="tbEditMode">✏ 手直しモード</span></label>
+        <button id="btn-editmode" type="button" class="btn-sub tool-btn edit-toggle" data-i18n="tbEditMode">✏ 手直しする</button>
       </div>
     </div>
 
@@ -343,8 +347,8 @@
   </div>
 </footer>
 
-<script src="palettes.js?v=1784268278"></script>
-<script src="config.js?v=1784268278"></script>
-<script src="app.js?v=1784268278"></script>
+<script src="palettes.js?v=1784269117"></script>
+<script src="config.js?v=1784269117"></script>
+<script src="app.js?v=1784269117"></script>
 </body>
 </html>

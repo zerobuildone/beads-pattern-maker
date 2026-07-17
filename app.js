@@ -889,6 +889,7 @@ const state = {
   editLog: new Map(), // 手直しログ: マス番号 -> {c:色コード, rgb} / null=消しゴム
   editW: 0, editH: 0, // ログが有効な図案サイズ（変わったらログは破棄）
   editSeries: null,   // 手直しを行ったブランド/サイズ（変わったら引き継ぎ通知を出す）
+  origImg: null,      // トリミングの切り出し元になる無劣化の原本画像
 };
 
 /* ---------- DOM ---------- */
@@ -1084,6 +1085,13 @@ const I18N = {
   toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
   toolReplace: { ja: "⇄ 色置換", en: "⇄ Replace" },
   btnPalette: { ja: "🎨 全色から選ぶ", en: "🎨 Pick from all colors" },
+  btnCrop: { ja: "✂ トリミング", en: "✂ Crop" },
+  cropTitle: { ja: "✂ トリミング", en: "✂ Crop" },
+  cropHint: { ja: "枠の中をドラッグで移動、角をドラッグで大きさ変更。枠の外からドラッグすると新しい範囲を描けます",
+    en: "Drag inside to move, drag corners to resize. Drag outside the box to draw a new area" },
+  cropReset: { ja: "全体に戻す", en: "Reset" },
+  cropCancel: { ja: "キャンセル", en: "Cancel" },
+  cropApply: { ja: "この範囲で使う", en: "Use this area" },
   lgSwapTip: { ja: "近い色に置き換える", en: "Swap to a similar color" },
   lgSwapTo: { ja: "近い色へ一括置き換え:", en: "Replace all with:" },
   lgInUse: { ja: "使用中", en: "in use" },
@@ -1273,6 +1281,34 @@ function updateMixNote() {
 
 /* ---------- 画像読み込み ---------- */
 
+// 作業画像を差し替えて自動判定→変換までやり直す（新規読み込み・トリミング適用の共通処理）
+function setWorkingImage(img, previewSrc, dataUrl) {
+  state.img = img;
+  if (dataUrl !== undefined) state.imgDataUrl = dataUrl;
+  state.editLog.clear(); // 別画像の手直しを持ち越さない
+  state.editW = state.editH = 0;
+  state.editSeries = null;
+  carryNote.hidden = true;
+  srcPreview.src = previewSrc;
+  srcPreviewWrap.hidden = false;
+  dropzone.hidden = true;
+  btnConvert.disabled = false;
+  if (chkAspect.checked) syncHeightFromWidth();
+  // ドット絵かどうかを自動判定 → そのまま自動変換
+  detectBanner.hidden = true;
+  lastBanner = null;
+  setTimeout(() => {
+    const isDotArt = runAutoDetect(true);
+    if (!isDotArt) {
+      // 非ドット絵: 写真/イラスト判定と背景除去を自動チューニング
+      autoTuneForImage();
+      chkAspect.checked = true;
+      syncHeightFromWidth();
+    }
+    scheduleConvert();
+  }, 30);
+}
+
 function loadFile(file) {
   if (!file || !file.type.startsWith("image/")) return;
   const url = URL.createObjectURL(file);
@@ -1283,32 +1319,137 @@ function loadFile(file) {
   fr.readAsDataURL(file);
   const img = new Image();
   img.onload = () => {
-    state.img = img;
-    state.editLog.clear(); // 別画像の手直しを持ち越さない
-    state.editW = state.editH = 0;
-    state.editSeries = null;
-    carryNote.hidden = true;
-    srcPreview.src = url;
-    srcPreviewWrap.hidden = false;
-    dropzone.hidden = true;
-    btnConvert.disabled = false;
-    if (chkAspect.checked) syncHeightFromWidth();
-    // ドット絵かどうかを自動判定 → そのまま自動変換
-    detectBanner.hidden = true;
-    lastBanner = null;
-    setTimeout(() => {
-      const isDotArt = runAutoDetect(true);
-      if (!isDotArt) {
-        // 非ドット絵: 写真/イラスト判定と背景除去を自動チューニング
-        autoTuneForImage();
-        chkAspect.checked = true;
-        syncHeightFromWidth();
-      }
-      scheduleConvert();
-    }, 30);
+    state.origImg = img; // トリミングの切り出し元（常に無劣化の原本から切る）
+    cropRect = null;
+    setWorkingImage(img, url);
   };
   img.src = url;
 }
+
+/* ---------- トリミング ---------- */
+// 常に「最初に読み込んだ原本」から切り抜く（何度やり直しても劣化しない）
+
+const cropModal = $("crop-modal");
+const cropCanvas = $("crop-canvas");
+const cropCtx = cropCanvas.getContext("2d");
+let cropRect = null;  // 原本ピクセル座標での選択範囲 {x,y,w,h}
+let cropView = 1;     // 表示倍率
+let cropDrag = null;
+
+function openCrop() {
+  if (!state.origImg) return;
+  const iw = state.origImg.naturalWidth, ih = state.origImg.naturalHeight;
+  const maxW = Math.min(window.innerWidth * 0.9 - 40, 720);
+  const maxH = window.innerHeight * 0.6;
+  cropView = Math.min(1, maxW / iw, maxH / ih);
+  cropCanvas.width = Math.max(1, Math.round(iw * cropView));
+  cropCanvas.height = Math.max(1, Math.round(ih * cropView));
+  if (!cropRect) cropRect = { x: 0, y: 0, w: iw, h: ih };
+  cropModal.hidden = false;
+  drawCrop();
+}
+
+function drawCrop() {
+  const s = cropView;
+  cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+  cropCtx.drawImage(state.origImg, 0, 0, cropCanvas.width, cropCanvas.height);
+  // 選択範囲の外を暗くする
+  const rx = cropRect.x * s, ry = cropRect.y * s, rw = cropRect.w * s, rh = cropRect.h * s;
+  cropCtx.fillStyle = "rgba(0,0,0,.55)";
+  cropCtx.fillRect(0, 0, cropCanvas.width, ry);
+  cropCtx.fillRect(0, ry, rx, rh);
+  cropCtx.fillRect(rx + rw, ry, cropCanvas.width - rx - rw, rh);
+  cropCtx.fillRect(0, ry + rh, cropCanvas.width, cropCanvas.height - ry - rh);
+  cropCtx.strokeStyle = "#ff5c49";
+  cropCtx.lineWidth = 2;
+  cropCtx.strokeRect(rx + 1, ry + 1, Math.max(1, rw - 2), Math.max(1, rh - 2));
+  cropCtx.fillStyle = "#ff5c49";
+  const hs = 10;
+  for (const [hx, hy] of [[rx, ry], [rx + rw, ry], [rx, ry + rh], [rx + rw, ry + rh]]) {
+    cropCtx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
+  }
+}
+
+function cropHit(px, py) {
+  const s = cropView;
+  const rx = cropRect.x * s, ry = cropRect.y * s, rw = cropRect.w * s, rh = cropRect.h * s;
+  const near = (a, b) => Math.abs(a - b) <= 14;
+  const corners = [["nw", rx, ry], ["ne", rx + rw, ry], ["sw", rx, ry + rh], ["se", rx + rw, ry + rh]];
+  for (const [k, cx, cy] of corners) if (near(px, cx) && near(py, cy)) return k;
+  if (px > rx && px < rx + rw && py > ry && py < ry + rh) return "move";
+  return null;
+}
+
+cropCanvas.addEventListener("pointerdown", (e) => {
+  if (!state.origImg) return;
+  const rect = cropCanvas.getBoundingClientRect();
+  const px = e.clientX - rect.left, py = e.clientY - rect.top;
+  let mode = cropHit(px, py);
+  if (!mode) {
+    // 枠の外からドラッグ開始＝そこを起点に新しい範囲を描く
+    const s = cropView;
+    cropRect = { x: px / s, y: py / s, w: 1, h: 1 };
+    mode = "se";
+  }
+  cropDrag = { mode, px, py, start: { ...cropRect } };
+  cropCanvas.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+cropCanvas.addEventListener("pointermove", (e) => {
+  if (!cropDrag || !state.origImg) return;
+  const iw = state.origImg.naturalWidth, ih = state.origImg.naturalHeight;
+  const rect = cropCanvas.getBoundingClientRect();
+  const s = cropView;
+  const dx = (e.clientX - rect.left - cropDrag.px) / s;
+  const dy = (e.clientY - rect.top - cropDrag.py) / s;
+  const st = cropDrag.start;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const MIN = 8;
+  if (cropDrag.mode === "move") {
+    cropRect = {
+      x: clamp(st.x + dx, 0, iw - st.w),
+      y: clamp(st.y + dy, 0, ih - st.h),
+      w: st.w, h: st.h,
+    };
+  } else {
+    let x0 = st.x, y0 = st.y, x1 = st.x + st.w, y1 = st.y + st.h;
+    if (cropDrag.mode.includes("w")) x0 = clamp(st.x + dx, 0, x1 - MIN);
+    if (cropDrag.mode.includes("e")) x1 = clamp(st.x + st.w + dx, x0 + MIN, iw);
+    if (cropDrag.mode.includes("n")) y0 = clamp(st.y + dy, 0, y1 - MIN);
+    if (cropDrag.mode.includes("s")) y1 = clamp(st.y + st.h + dy, y0 + MIN, ih);
+    cropRect = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+  drawCrop();
+  e.preventDefault();
+}, { passive: false });
+cropCanvas.addEventListener("pointerup", () => { cropDrag = null; });
+cropCanvas.addEventListener("pointercancel", () => { cropDrag = null; });
+
+$("btn-crop").addEventListener("click", openCrop);
+$("btn-crop-reset").addEventListener("click", () => {
+  if (!state.origImg) return;
+  cropRect = { x: 0, y: 0, w: state.origImg.naturalWidth, h: state.origImg.naturalHeight };
+  drawCrop();
+});
+$("btn-crop-cancel").addEventListener("click", () => { cropModal.hidden = true; });
+cropModal.addEventListener("click", (e) => { if (e.target === cropModal) cropModal.hidden = true; });
+$("btn-crop-apply").addEventListener("click", () => {
+  if (!state.origImg || !cropRect) return;
+  const r = {
+    x: Math.round(cropRect.x), y: Math.round(cropRect.y),
+    w: Math.max(1, Math.round(cropRect.w)), h: Math.max(1, Math.round(cropRect.h)),
+  };
+  const cv = document.createElement("canvas");
+  cv.width = r.w; cv.height = r.h;
+  cv.getContext("2d").drawImage(state.origImg, -r.x, -r.y);
+  const dataUrl = cv.toDataURL("image/png");
+  const img = new Image();
+  img.onload = () => {
+    cropModal.hidden = true;
+    setWorkingImage(img, dataUrl, dataUrl);
+  };
+  img.src = dataUrl;
+});
 
 function syncHeightFromWidth() {
   if (!state.img) return;
@@ -1341,6 +1482,8 @@ document.addEventListener("paste", (e) => {
 $("btn-clear-image").addEventListener("click", () => {
   state.img = null;
   state.imgDataUrl = null;
+  state.origImg = null;
+  cropRect = null;
   state.grid = null;
   state.editLog.clear();
   state.editW = state.editH = 0;
@@ -1482,6 +1625,8 @@ function restoreSession() {
   const img = new Image();
   img.onload = () => {
     state.img = img;
+    state.origImg = img; // 復元後はこの画像がトリミングの原本になる
+    cropRect = null;
     state.imgDataUrl = s.imgData;
     srcPreview.src = s.imgData;
     srcPreviewWrap.hidden = false;

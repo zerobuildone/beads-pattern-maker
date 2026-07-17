@@ -46,7 +46,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1784274395">
+<link rel="stylesheet" href="style.css?v=1784274751">
 </head>
 <body>
 <noscript><p style="padding:16px;text-align:center">このツールはブラウザ内で画像を変換するため、JavaScriptを有効にしてご利用ください。/ This tool converts images in your browser and requires JavaScript.</p></noscript>
@@ -79,6 +79,7 @@
     <div id="src-preview-wrap" hidden>
       <img id="src-preview" alt="preview">
       <div class="preview-side">
+        <button id="btn-crop" type="button" class="btn-sub" data-i18n="btnCrop">✂ トリミング</button>
         <button id="btn-clear-image" type="button" class="btn-sub" data-i18n="btnChangeImage">別の画像にする</button>
       </div>
     </div>
@@ -349,8 +350,23 @@
   </div>
 </footer>
 
-<script src="palettes.js?v=1784274395"></script>
-<script src="config.js?v=1784274395"></script>
-<script src="app.js?v=1784274395"></script>
+<!-- トリミングモーダル -->
+<div id="crop-modal" class="crop-modal" hidden>
+  <div class="crop-box">
+    <h3 data-i18n="cropTitle">✂ トリミング</h3>
+    <div class="crop-stage"><canvas id="crop-canvas"></canvas></div>
+    <p class="crop-hint" data-i18n="cropHint">枠の中をドラッグで移動、角をドラッグで大きさ変更。枠の外からドラッグすると新しい範囲を描けます</p>
+    <div class="crop-actions">
+      <button id="btn-crop-reset" type="button" class="btn-sub" data-i18n="cropReset">全体に戻す</button>
+      <span class="crop-spacer"></span>
+      <button id="btn-crop-cancel" type="button" class="btn-sub" data-i18n="cropCancel">キャンセル</button>
+      <button id="btn-crop-apply" type="button" class="btn-main" data-i18n="cropApply">この範囲で使う</button>
+    </div>
+  </div>
+</div>
+
+<script src="palettes.js?v=1784274751"></script>
+<script src="config.js?v=1784274751"></script>
+<script src="app.js?v=1784274751"></script>
 </body>
 </html>

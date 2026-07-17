@@ -826,6 +826,7 @@ const selPlate = $("sel-plate");
 const chkOutline = $("chk-outline");
 const chkCleanup = $("chk-cleanup");
 const chkSpecial = $("chk-special");
+const chkShading = $("chk-shading");
 const chkAddOutline = $("chk-addoutline");
 const selOutlineColor = $("sel-outline-color");
 const outlineSwatch = $("outline-swatch");
@@ -957,6 +958,8 @@ const I18N = {
   optCleanup: { ja: "仕上げの整形（ノイズ粒・浮きビーズを整理）", en: "Cleanup pass (remove noise & stray beads)" },
   optSpecial: { ja: "特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）",
     en: "Use specialty colors (glitter / glow / clear — they look very different in real life, OFF recommended)" },
+  optShading: { ja: "陰影を保持（明暗の段差を同系の別ビーズへ割り振る）",
+    en: "Preserve shading (spread tones across similar beads)" },
   optAddOutline: { ja: "図案のふちに縁取りを追加（アウトライン）",
     en: "Add an outline along the pattern edge" },
   optOutlineColor: { ja: "縁取りの色", en: "Outline color" },
@@ -1265,7 +1268,7 @@ document.querySelectorAll(".chip").forEach((chip) => {
   });
 });
 
-[chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg].forEach((el) =>
+[chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg, chkShading].forEach((el) =>
   el.addEventListener("change", scheduleConvert));
 chkAddOutline.addEventListener("change", () => {
   outlineColorRow.hidden = !chkAddOutline.checked;
@@ -1348,6 +1351,7 @@ function saveSession() {
       whitebg: chkWhiteBg.checked,
       cleanup: chkCleanup.checked,
       special: chkSpecial.checked,
+      shading: chkShading.checked,
       addOutline: chkAddOutline.checked,
       outlineColor: outlineCode,
       plate: selPlate.value,
@@ -1382,6 +1386,7 @@ function restoreSession() {
     chkWhiteBg.checked = !!s.whitebg;
     chkCleanup.checked = s.cleanup !== false;
     chkSpecial.checked = !!s.special;
+    chkShading.checked = s.shading !== false;
     chkAddOutline.checked = !!s.addOutline;
     outlineColorRow.hidden = !chkAddOutline.checked;
     if (s.outlineColor) outlineCode = s.outlineColor;
@@ -1653,6 +1658,12 @@ function convert() {
     }
   }
 
+  // 陰影の保持: 明暗の違う元色が同じビーズへ潰れていたら、同系ビーズのラダーへ振り直す
+  // （ディザリング時は誤差拡散が階調を表現するので不要）
+  if (chkShading.checked && !useDither) {
+    preserveShading(grid, palette, cellLabArr, W, H);
+  }
+
   // 色数の整理:
   //  自動 = 知覚的にそっくりな色(ΔE00<4)だけ統合して注文を簡素化（色数は固定しない）
   //  数値 = Ward法型の統合で指定色数まで削減（差し色保護つき）
@@ -1711,6 +1722,129 @@ function convert() {
     stepResult.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   saveSession();
+}
+
+// 陰影の保持: 少色パレットで「明暗の違う元色が同じビーズに潰れる」のを防ぐ。
+// 1色ずつの最近色マッチではなく、絵全体で「同じビーズに潰れた明暗の段」を検出し、
+// その段数分のビーズを同系色の明度ラダーから順序を保ったまま確保し直す（DP最適割当）。
+// 「マスごとに絶対的に一番近い色」より「元絵の相対的な明暗差」を優先する処理で、
+// 例えばナノビーズには L44 エバーグリーンより暗い緑が無いため、服の中間緑も影も
+// エバーグリーン1色に潰れる → 中間緑をみどりへ持ち上げて影との段差を残す
+function preserveShading(grid, palette, cellLab, W, H) {
+  const total = W * H;
+  // 1) 使用セルをΔE00≤4のクラスタへ集約（多すぎる=写真的な連続階調なら何もしない）
+  const clusters = [];
+  const cellCl = new Int16Array(total).fill(-1);
+  for (let i = 0; i < total; i++) {
+    if (grid[i] < 0) continue;
+    const lab = [cellLab[i * 3], cellLab[i * 3 + 1], cellLab[i * 3 + 2]];
+    let hit = -1;
+    for (let k = 0; k < clusters.length; k++) {
+      const cl = clusters[k];
+      if (Math.abs(cl.lab[0] - lab[0]) < 6 && ciede2000(cl.lab, lab) <= 4) { hit = k; break; }
+    }
+    if (hit < 0) {
+      if (clusters.length >= 120) return;
+      clusters.push({ lab: lab.slice(), n: 0 });
+      hit = clusters.length - 1;
+    }
+    clusters[hit].n++;
+    cellCl[i] = hit;
+  }
+  const cellsUsed = clusters.reduce((s, c) => s + c.n, 0);
+  const minN = Math.max(4, Math.round(cellsUsed * 0.004));
+  const hueOf = (lab) => Math.atan2(lab[2], lab[1]) * 180 / Math.PI;
+  const chromaOf = (lab) => Math.hypot(lab[1], lab[2]);
+  const hueDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  // 2) 「同じビーズに潰れた」クラスタ群だけを対象にする（collapse-triggered）。
+  //    既に自分のビーズを持てている色（肌・差し色など）には一切触らない。
+  //    色相だけで束ねると髪と赤マント、髪と肌のような別素材が混線するため
+  const byBead = new Map();
+  const usedBeads = new Set(); // 既に誰かの色になっているビーズ（そこへ逃がすと新たな潰れを生む）
+  clusters.forEach((c, k) => {
+    c.k = k;
+    c.bead = nearestIndex(c.lab, palette);
+    if (c.n >= minN) {
+      if (!byBead.has(c.bead)) byBead.set(c.bead, []);
+      byBead.get(c.bead).push(c);
+      usedBeads.add(c.bead);
+    }
+  });
+  const remap = new Map(); // クラスタ番号 -> 割り振り先 palette index
+  for (const [bi, list] of byBead) {
+    if (list.length < 2) continue;
+    const bl = palette[bi].lab;
+    if (chromaOf(bl) < 8) continue; // 黒・グレーへ落ちた影はここでは動かさない
+    // 明度順に並べ、L差5未満の隣同士は同じ「段」として扱う（JPEGノイズ等の誤分割対策）
+    const ms = list.slice().sort((a, b) => a.lab[0] - b.lab[0]);
+    if (ms[ms.length - 1].lab[0] - ms[0].lab[0] < 6) continue; // 明暗の段差が無い＝陰影ではない
+    const rungs = [];
+    for (const m of ms) {
+      const last = rungs[rungs.length - 1];
+      if (last && m.lab[0] - last.top < 5) { last.members.push(m); last.n += m.n; last.top = m.lab[0]; }
+      else rungs.push({ members: [m], n: m.n, top: m.lab[0] });
+    }
+    if (rungs.length < 2) continue;
+    for (const r of rungs) {
+      const lab = [0, 0, 0];
+      for (const m of r.members) { lab[0] += m.lab[0] * m.n; lab[1] += m.lab[1] * m.n; lab[2] += m.lab[2] * m.n; }
+      r.lab = [lab[0] / r.n, lab[1] / r.n, lab[2] / r.n];
+    }
+    // 3) 潰れたビーズと同系色で「空いている」ビーズ候補（明度順のラダー）。
+    //    元のビーズは常に含める。使用中のビーズへ逃がすと別の色と潰れ直すだけなので除外。
+    //    色相±24°: これ以上離れると「同じ素材の明暗」ではなく別の色に見える
+    //    （例: 茶髪の影→ワインレッドの誤爆）
+    const bh = hueOf(bl);
+    const beads = [];
+    for (let p = 0; p < palette.length; p++) {
+      const pl = palette[p].lab;
+      if (p === bi || (!usedBeads.has(p) && chromaOf(pl) >= 8 && hueDiff(hueOf(pl), bh) <= 24)) beads.push(p);
+    }
+    if (beads.length < 2) continue;
+    beads.sort((a, b) => palette[a].lab[0] - palette[b].lab[0]);
+    // 4) 順序を保つ割当をDPで選ぶ。段を潰す（同じビーズの使い回し）は1マスあたり
+    //    ΔE10相当のペナルティ、かけ離れた色への飛び付きは最近色+14で禁止
+    const PEN = 10, CAP = 14;
+    const cost = rungs.map((r) => {
+      const rc = chromaOf(r.lab);
+      const near = beadDist(r.lab, palette[nearestIndex(r.lab, palette)].lab);
+      return beads.map((p) => {
+        const pl = palette[p].lab;
+        // 鮮やかさが大きく違うビーズへの飛び付きは追加コスト（くすんだ髪→ネオン色などの事故防止）
+        const d = beadDist(r.lab, pl) + Math.max(0, Math.abs(chromaOf(pl) - rc) - 15) * 0.3;
+        return d <= near + CAP ? d * r.n : Infinity;
+      });
+    });
+    const nR = rungs.length, nB = beads.length;
+    const dp = [], from = [];
+    for (let i = 0; i < nR; i++) { dp.push(new Array(nB).fill(Infinity)); from.push(new Array(nB).fill(-1)); }
+    for (let j = 0; j < nB; j++) dp[0][j] = cost[0][j];
+    for (let i = 1; i < nR; i++) {
+      for (let j = 0; j < nB; j++) {
+        if (cost[i][j] === Infinity) continue;
+        for (let j2 = 0; j2 <= j; j2++) {
+          if (dp[i - 1][j2] === Infinity) continue;
+          const v = dp[i - 1][j2] + cost[i][j] + (j2 === j ? PEN * rungs[i].n : 0);
+          if (v < dp[i][j]) { dp[i][j] = v; from[i][j] = j2; }
+        }
+      }
+    }
+    let bj = -1, bv = Infinity;
+    for (let j = 0; j < nB; j++) if (dp[nR - 1][j] < bv) { bv = dp[nR - 1][j]; bj = j; }
+    if (bj < 0) continue;
+    for (let i = nR - 1; i >= 0; i--) {
+      if (beads[bj] !== bi) {
+        for (const mem of rungs[i].members) remap.set(mem.k, beads[bj]);
+        usedBeads.add(beads[bj]); // 確保済み: 後続の潰れグループが同じ色へ逃げないように
+      }
+      if (i > 0) bj = from[i][bj];
+    }
+  }
+  if (!remap.size) return;
+  for (let i = 0; i < total; i++) {
+    const k = cellCl[i];
+    if (k >= 0 && remap.has(k)) grid[i] = remap.get(k);
+  }
 }
 
 // 手直しログの再適用。ビーズは色コードでパレットに対応付け、

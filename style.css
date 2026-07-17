@@ -129,7 +129,9 @@ main { max-width: 900px; margin: 0 auto; padding: 8px 20px; }
   #pattern-pane.pane-overflow { position: static; }
 
   /* ビーズ一覧の購入ボタンは列幅に応じて折り返す（内部横スクロールを作らない） */
-  #legend-table td:last-child { white-space: normal; }
+  /* 購入ボタンは列幅に応じて折り返す（⇄列の追加でtd:last-child指定がズレたため明示指定） */
+  #legend-table td.td-buy { white-space: normal; }
+  #legend-table td.td-swap { padding-left: 4px; padding-right: 6px; }
   .buy-link { margin-bottom: 4px; }
 }
 
@@ -649,6 +651,7 @@ body.edit-on p.edit-only { display: block !important; }
 }
 .lg-swap:hover { background: var(--accent-soft); }
 #legend-table tbody tr.lg-alt { cursor: default; }
+#legend-table tr.lg-alt td { white-space: normal; }
 #legend-table tbody tr.lg-alt:hover { background: #f6f3ea; }
 tr.lg-alt td { background: #f6f3ea; }
 .lg-alt-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .8rem; padding: 2px 0; }

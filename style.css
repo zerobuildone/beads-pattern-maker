@@ -469,9 +469,13 @@ body.edit-on .edit-panel { display: block; }
 
 /* 詳細設定の折りたたみ（気づけるボタンとして明示） */
 .btn-adv {
-  display: flex;
+  /* 1行目=矢印+タイトル、2行目=説明文の固定2行構造。
+     幅の揺れで説明文の折り返し位置が変わっても、タイトルとボタンの高さが動かない */
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 2px;
   width: 100%;
   margin-top: 18px;
   padding: 11px 14px;
@@ -482,6 +486,7 @@ body.edit-on .edit-panel { display: block; }
   text-align: left;
   font-size: .9rem;
 }
+.btn-adv .adv-hint { grid-column: 1 / -1; }
 .btn-adv:hover { background: var(--accent-soft); }
 .btn-adv:active { transform: translate(2px, 2px); box-shadow: none; }
 .adv-title { font-weight: bold; white-space: nowrap; }

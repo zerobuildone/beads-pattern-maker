@@ -294,7 +294,7 @@ function srgbToLab(r, g, b) {
 
 // CIEDE2000 知覚色差（Sharma 2005 準拠）。CIE76より人間の感覚に忠実で、
 // 特に青〜紫・低彩度域でのビーズ色選びが改善する
-function ciede2000(l1, l2) {
+function ciede2000(l1, l2, kL) {
   const L1 = l1[0], a1 = l1[1], b1 = l1[2];
   const L2 = l2[0], a2 = l2[1], b2 = l2[2];
   const rad = Math.PI / 180, deg = 180 / Math.PI;
@@ -328,13 +328,31 @@ function ciede2000(l1, l2) {
   const SC = 1 + 0.045 * Cbp;
   const SH = 1 + 0.015 * Cbp * T;
   const RT = -Math.sin(2 * dTheta * rad) * RC;
-  const dL = dLp / SL, dC = dCp / SC, dH = dHp / SH;
+  const dL = dLp / ((kL || 1) * SL), dC = dCp / SC, dH = dHp / SH;
   return Math.sqrt(dL * dL + dC * dC + dH * dH + RT * dC * dH);
 }
 
-// 最近色: CIE76二乗距離で上位候補に絞ってからCIEDE2000で精密比較（速度と精度の両立）
+// ビーズ選定用の色距離。測色的な最短(ΔE00)そのままではなく「人がビーズを選ぶ基準」に寄せる:
+//  - 暗部だけ明度差を割り引く(kL: L≥45で1 → L≤15で2)。素のΔE00は暗い色同士だと明るさの
+//    近さが支配的になり、「色相が合う暗い緑」より「明るさが近いだけの黒」が勝ってしまう。
+//    一方、肌色などの中明度〜明部はキャラの見た目を決めるので素のΔE00のまま厳密に合わせる
+//  - 無彩色⇔有彩色の取り違えに罰則(全明度域)。黒・グレー・白が色物のマスを吸う事故と、
+//    グレーのマスに色付きビーズが乗る事故の両方向を抑える
+function beadDist(lab, plab) {
+  const lBar = (lab[0] + plab[0]) / 2;
+  const kL = 1 + Math.min(1, Math.max(0, (45 - lBar) / 30));
+  let d = ciede2000(lab, plab, kL);
+  const cs = Math.hypot(lab[1], lab[2]);
+  const cc = Math.hypot(plab[1], plab[2]);
+  const lo = Math.min(cs, cc), hi = Math.max(cs, cc);
+  if (lo < 6 && hi > 12) d += (hi - 12) * 0.5;
+  return d;
+}
+
+// 最近色: CIE76二乗距離で上位候補に絞ってからビーズ選定距離(beadDist)で精密比較（速度と精度の両立）
+// K=16: beadDistはCIE76と順位が入れ替わりやすいため、候補は広めに残す
 function nearestIndex(lab, palette) {
-  const K = 8;
+  const K = 16;
   const candIdx = new Int32Array(K).fill(-1);
   const candD = new Float64Array(K).fill(Infinity);
   for (let i = 0; i < palette.length; i++) {
@@ -351,7 +369,7 @@ function nearestIndex(lab, palette) {
   for (let k = 0; k < K; k++) {
     const i = candIdx[k];
     if (i < 0) break;
-    const d = ciede2000(lab, palette[i].lab);
+    const d = beadDist(lab, palette[i].lab);
     if (d < bestD) { bestD = d; best = i; }
   }
   return best;
@@ -1642,7 +1660,7 @@ function applyColorLimit(grid, palette, limit, cellLab) {
         const lab = [cellLab[i * 3], cellLab[i * 3 + 1], cellLab[i * 3 + 2]];
         let bd = Infinity;
         for (const idx of remain) {
-          const d = ciede2000(lab, palette[idx].lab);
+          const d = beadDist(lab, palette[idx].lab);
           if (d < bd) { bd = d; tgt = idx; }
         }
       }
@@ -1680,7 +1698,7 @@ function autoMergePalette(grid, palette, cellLab) {
       const lab = [cellLab[i * 3], cellLab[i * 3 + 1], cellLab[i * 3 + 2]];
       let tgt = remain[0], bd = Infinity;
       for (const idx of remain) {
-        const d = ciede2000(lab, palette[idx].lab);
+        const d = beadDist(lab, palette[idx].lab);
         if (d < bd) { bd = d; tgt = idx; }
       }
       grid[i] = tgt;

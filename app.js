@@ -1029,6 +1029,9 @@ const I18N = {
   toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
   toolReplace: { ja: "⇄ 色置換", en: "⇄ Replace" },
   btnPalette: { ja: "🎨 全色から選ぶ", en: "🎨 Pick from all colors" },
+  lgSwapTip: { ja: "近い色に置き換える", en: "Swap to a similar color" },
+  lgSwapTo: { ja: "近い色へ一括置き換え:", en: "Replace all with:" },
+  lgInUse: { ja: "使用中", en: "in use" },
   carryMsg: { ja: "✏ 手直しの内容を、新しいビーズの近い色で引き継ぎました",
     en: "✏ Your manual edits were carried over using the closest colors in the new palette" },
   carryDiscard: { ja: "手直しを破棄して自動変換に戻す", en: "Discard edits & reconvert" },
@@ -2506,8 +2509,62 @@ function usedColors() {
     .sort((a, b) => b.count - a.count);
 }
 
+// ビーズ一覧の行の下に「近い色への一括置き換え」候補を展開する。
+// 候補は選択中パレット内の近色4種。既に図案で使っている色には「使用中」を明示
+// （置き換えると既存のその色と統合される＝色数が1つ減ることが分かるように）
+function toggleAltRow(tr, idx, usedSet) {
+  const next = tr.nextElementSibling;
+  const wasOpen = next && next.classList.contains("lg-alt");
+  legendBody.querySelectorAll("tr.lg-alt").forEach((r) => r.remove());
+  if (wasOpen) return;
+  const cands = state.palette
+    .map((c, i) => ({ i, d: beadDist(state.palette[idx].lab, c.lab) }))
+    .filter((x) => x.i !== idx)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 4);
+  const row = document.createElement("tr");
+  row.className = "lg-alt";
+  const td = document.createElement("td");
+  td.colSpan = 8;
+  const wrap = document.createElement("div");
+  wrap.className = "lg-alt-wrap";
+  const cap = document.createElement("span");
+  cap.className = "lg-alt-label";
+  cap.textContent = T("lgSwapTo");
+  wrap.appendChild(cap);
+  for (const { i } of cands) {
+    const c = state.palette[i];
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "lg-alt-btn";
+    b.title = `${c.c} ${dispName(c)}`;
+    const sw = document.createElement("span");
+    sw.className = "legend-swatch";
+    sw.style.background = `rgb(${c.rgb[0]},${c.rgb[1]},${c.rgb[2]})`;
+    b.appendChild(sw);
+    const nm = document.createElement("span");
+    nm.textContent = dispName(c);
+    b.appendChild(nm);
+    if (usedSet.has(i)) {
+      const badge = document.createElement("span");
+      badge.className = "lg-inuse";
+      badge.textContent = T("lgInUse");
+      b.appendChild(badge);
+    }
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      replaceAllColor(idx, i);
+    });
+    wrap.appendChild(b);
+  }
+  td.appendChild(wrap);
+  row.appendChild(td);
+  tr.after(row);
+}
+
 function renderLegend() {
   const used = usedColors();
+  const usedSet = new Set(used.map((u) => u.idx));
   const isMixed = !!(state.series && state.series.mixed);
   legendTable.classList.toggle("mixed", isMixed);
   legendBody.innerHTML = "";
@@ -2570,6 +2627,21 @@ function renderLegend() {
       tdBuy.appendChild(a);
     }
     tr.appendChild(tdBuy);
+
+    // 近い色への一括置き換え（同ブランド内の近色候補を展開）
+    const tdSwap = document.createElement("td");
+    tdSwap.className = "td-swap";
+    const sb = document.createElement("button");
+    sb.type = "button";
+    sb.className = "lg-swap";
+    sb.textContent = "⇄";
+    sb.title = T("lgSwapTip");
+    sb.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAltRow(tr, idx, usedSet);
+    });
+    tdSwap.appendChild(sb);
+    tr.appendChild(tdSwap);
 
     // 同じ色をもう一度タップ/クリックするとペン解除（スマホで塗りモードから抜けられるように）
     tr.addEventListener("click", () => {
@@ -2751,20 +2823,23 @@ function fillAt(i) {
   commitPaint();
 }
 
-// 色の一括置換: タップしたマスの色を、図案全体でペンの色に置き換える（1回のundoで戻せる）
-function replaceColorAt(i) {
-  if (i < 0 || state.pen === -2) return;
-  const val = state.pen === -1 ? -1 : state.pen;
-  const from = state.grid[i];
-  if (from < 0 || from === val) return; // 透過マスは対象外（背景の全置換事故を防ぐ）
+// 図案全体で from 色のマスを to 色へ一括置き換え（1回のundoで戻せる・手直しログに記録）
+function replaceAllColor(from, to) {
+  if (!state.grid || from < 0 || from === to) return; // 透過マスは対象外（背景の全置換事故を防ぐ）
   state.painting = [];
   for (let j = 0; j < state.grid.length; j++) {
     if (state.grid[j] !== from) continue;
-    state.painting.push({ i: j, old: from, oldLog: logEdit(j, val) });
-    state.grid[j] = val;
+    state.painting.push({ i: j, old: from, oldLog: logEdit(j, to) });
+    state.grid[j] = to;
   }
   render();
   commitPaint();
+}
+
+// 色の一括置換ツール: タップしたマスの色を、図案全体でペンの色に置き換える
+function replaceColorAt(i) {
+  if (i < 0 || state.pen === -2) return;
+  replaceAllColor(state.grid[i], state.pen === -1 ? -1 : state.pen);
 }
 
 const chkEditMode = $("chk-editmode");

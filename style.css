@@ -186,10 +186,10 @@ body.symbols-on #legend-table .col-sym { display: table-cell; }
   #legend-table, #legend-table tbody { display: block; width: 100%; }
   #legend-table tr {
     display: grid;
-    grid-template-columns: 30px 1fr auto;
+    grid-template-columns: 30px 1fr auto auto;
     grid-template-areas:
-      "sw name count"
-      "sw buy  buy";
+      "sw name count swap"
+      "sw buy  buy  buy";
     gap: 4px 10px;
     align-items: center;
     padding: 9px 2px;
@@ -200,6 +200,10 @@ body.symbols-on #legend-table .col-sym { display: table-cell; }
   #legend-table td.td-name { grid-area: name; font-weight: bold; }
   #legend-table td.td-count { grid-area: count; color: var(--ink-sub); }
   #legend-table td.td-buy { grid-area: buy; }
+  #legend-table td.td-swap { grid-area: swap; }
+  /* 置き換え候補の行はカード型グリッドにしない */
+  #legend-table tr.lg-alt { display: block; padding: 0 0 9px; }
+  .lg-alt-btn { min-height: 38px; }
   /* 記号・色番号・ブランド列はスマホでは出さない（購入は直リンク主体のため不要） */
   #legend-table td.col-sym, #legend-table td.col-code, #legend-table td.col-brand { display: none !important; }
   .buy-link { margin: 2px 6px 2px 0; padding: 6px 14px; }
@@ -609,6 +613,28 @@ body.edit-on p.edit-only { display: block !important; }
 #legend-table tbody tr.pen-active { background: #ffd9d4; }
 #legend-table .col-brand { display: none; }
 #legend-table.mixed .col-brand { display: table-cell; }
+
+/* 近い色への一括置き換え */
+.lg-swap {
+  border: 1px solid var(--ink); background: #fff; cursor: pointer;
+  font-size: .82rem; padding: 2px 7px; border-radius: 0; line-height: 1.4;
+}
+.lg-swap:hover { background: var(--accent-soft); }
+#legend-table tbody tr.lg-alt { cursor: default; }
+#legend-table tbody tr.lg-alt:hover { background: #f6f3ea; }
+tr.lg-alt td { background: #f6f3ea; }
+.lg-alt-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .8rem; padding: 2px 0; }
+.lg-alt-label { color: var(--ink-sub); }
+.lg-alt-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--ink); background: #fff; cursor: pointer;
+  padding: 4px 9px; font-size: .8rem; border-radius: 0;
+}
+.lg-alt-btn:hover { background: var(--accent-soft); }
+.lg-inuse {
+  font-size: .68rem; color: #fff; background: var(--accent);
+  padding: 1px 5px; border-radius: 2px;
+}
 .legend-swatch {
   display: inline-block; width: 22px; height: 22px;
   border: 2px solid var(--ink); vertical-align: middle;

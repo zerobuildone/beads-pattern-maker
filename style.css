@@ -353,18 +353,42 @@ body.symbols-on #legend-table .col-sym { display: table-cell; }
 .field-check { display: flex; align-items: center; gap: 7px; font-size: .9rem; cursor: pointer; }
 .field-check input { width: 16px; height: 16px; accent-color: var(--accent); }
 
-/* 全色パレット（手直しモード用） */
+/* 手直しパネル: 手直しモードON中だけ表示（ツール類を1か所に集約） */
+.edit-panel {
+  display: none;
+  border: 2px solid var(--ink);
+  background: #fff;
+  box-shadow: var(--shadow);
+  padding: 10px 12px;
+  margin: 10px 0 6px;
+}
+body.edit-on .edit-panel { display: block; }
+.ep-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ep-row + .ep-row { margin-top: 10px; }
+.ep-size { display: inline-flex; align-items: center; gap: 4px; }
+.ep-undo { margin-left: auto; }
+.edit-panel .edit-hint { margin: 10px 0 0; }
+@media (max-width: 700px) {
+  .edit-panel .tool-btn { flex: 1 1 calc(25% - 8px); min-height: 40px; }
+  .edit-panel .pen-size-btn, .edit-panel .btn-sub { min-height: 40px; }
+  .ep-undo { margin-left: 0; flex: 1 1 auto; }
+}
+
+/* 全色パレット（手直しモード用・色相順に整列） */
 .palette-pop {
   display: flex; flex-wrap: wrap; gap: 4px;
-  border: 2px solid var(--ink); background: #fff; box-shadow: var(--shadow);
-  padding: 8px; margin-top: 8px; max-height: 190px; overflow-y: auto;
+  border: 2px solid rgba(0,0,0,.25); background: #fafafa;
+  padding: 8px; margin-top: 10px; max-height: 200px; overflow-y: auto;
 }
-.palette-pop[hidden] { display: none; }
+.palette-pop[hidden] { display: none !important; }
 .pp-sw {
-  width: 26px; height: 26px; padding: 0; cursor: pointer;
+  width: 28px; height: 28px; padding: 0; cursor: pointer;
   border: 1px solid rgba(0,0,0,.35); border-radius: 0;
 }
 .pp-sw.pen-active { outline: 3px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 700px) {
+  .pp-sw { width: 34px; height: 34px; }
+}
 
 /* 縁取り(アウトライン)の色選択行 */
 .outline-row { display: flex; align-items: center; gap: 8px; font-size: .9rem; margin-left: 23px; }

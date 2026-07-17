@@ -998,15 +998,15 @@ const I18N = {
   tbSymbols: { ja: "色記号", en: "Symbols" },
   tbEdit: { ja: "手直し", en: "Edit" },
   penPrefix: { ja: "ペン:", en: "Pen:" },
-  btnEraser: { ja: "消しゴム", en: "Eraser" },
-  btnUndo: { ja: "元に戻す", en: "Undo" },
-  editHint: { ja: "手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧か「🎨全色」から選択・右クリックでスポイト）。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます。OFFなら通常のスクロール操作",
-    en: "Painting works only while Edit mode is ON (pick colors from the bead list or the 🎨 palette, right-click to eyedrop). \"⇄ Replace\" swaps every cell of the tapped color to the pen color. When OFF, touches scroll normally" },
+  btnEraser: { ja: "◻ 消しゴム", en: "◻ Eraser" },
+  btnUndo: { ja: "↩ 元に戻す", en: "↩ Undo" },
+  editHint: { ja: "図案をタップ/クリックで塗れます。色はビーズ一覧・🎨全色・右クリック（スポイト）で選択。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます",
+    en: "Tap/click the pattern to paint. Pick colors from the bead list, the 🎨 palette, or right-click to eyedrop. \"⇄ Replace\" swaps every cell of the tapped color to the pen color" },
   tbEditMode: { ja: "✏ 手直しモード", en: "✏ Edit mode" },
   toolPen: { ja: "✎ ペン", en: "✎ Pen" },
   toolFill: { ja: "▧ 塗りつぶし", en: "▧ Fill" },
   toolReplace: { ja: "⇄ 色置換", en: "⇄ Replace" },
-  btnPalette: { ja: "🎨 全色", en: "🎨 All colors" },
+  btnPalette: { ja: "🎨 全色から選ぶ", en: "🎨 Pick from all colors" },
   tbPenSize: { ja: "太さ", en: "Size" },
   mbSettings: { ja: "設定", en: "Settings" },
   mbBeads: { ja: "ビーズ一覧", en: "Beads" },
@@ -2428,7 +2428,19 @@ function buildPalettePop() {
   palettePop.innerHTML = "";
   const used = new Set();
   if (state.grid) for (const v of state.grid) if (v >= 0) used.add(v);
-  state.palette.forEach((c, i) => {
+  // 表示は色相順（無彩色→色相30°刻み、各グループ内は明→暗）。カタログ順より目で探しやすい
+  const order = state.palette.map((c, i) => ({ c, i }));
+  const groupOf = (c) => {
+    const C = Math.hypot(c.lab[1], c.lab[2]);
+    if (C < 8) return -1; // 無彩色は先頭
+    return Math.floor(((Math.atan2(c.lab[2], c.lab[1]) * 180 / Math.PI + 360) % 360) / 30);
+  };
+  order.sort((a, b) => {
+    const ga = groupOf(a.c), gb = groupOf(b.c);
+    if (ga !== gb) return ga - gb;
+    return b.c.lab[0] - a.c.lab[0];
+  });
+  for (const { c, i } of order) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "pp-sw" + (i === state.pen ? " pen-active" : "");
@@ -2438,7 +2450,7 @@ function buildPalettePop() {
     b.dataset.idx = i;
     b.addEventListener("click", () => { setPen(i); palettePop.hidden = true; });
     palettePop.appendChild(b);
-  });
+  }
 }
 btnPalette.addEventListener("click", () => {
   if (!state.palette.length) return;
@@ -2447,6 +2459,7 @@ btnPalette.addEventListener("click", () => {
 });
 
 function updatePenStatus() {
+  $("btn-pen-erase").classList.toggle("active", state.pen === -1);
   if (state.pen === -2) {
     penSwatch.style.background = "#fff";
     penLabel.textContent = T("penNone");

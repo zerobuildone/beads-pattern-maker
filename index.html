@@ -238,21 +238,31 @@
       </div>
       <div class="tb-group">
         <label class="field-check edit-toggle"><input type="checkbox" id="chk-editmode"><span data-i18n="tbEditMode">✏ 手直しモード</span></label>
-        <span class="pen-status edit-only"><span data-i18n="penPrefix">ペン:</span> <span id="pen-swatch" class="pen-swatch"></span><span id="pen-label">未選択</span></span>
-        <button id="btn-palette" type="button" class="btn-sub edit-only" data-i18n="btnPalette">🎨 全色</button>
-        <button id="tool-pen" type="button" class="btn-sub edit-only tool-btn active" data-i18n="toolPen">✎ ペン</button>
-        <button id="tool-fill" type="button" class="btn-sub edit-only tool-btn" data-i18n="toolFill">▧ 塗りつぶし</button>
-        <button id="tool-replace" type="button" class="btn-sub edit-only tool-btn" data-i18n="toolReplace">⇄ 色置換</button>
-        <span class="tb-label edit-only" data-i18n="tbPenSize">太さ</span>
-        <button type="button" class="btn-sub edit-only pen-size-btn active" data-size="1">1</button>
-        <button type="button" class="btn-sub edit-only pen-size-btn" data-size="2">2</button>
-        <button type="button" class="btn-sub edit-only pen-size-btn" data-size="3">3</button>
-        <button id="btn-pen-erase" type="button" class="btn-sub edit-only" data-i18n="btnEraser">消しゴム</button>
-        <button id="btn-undo" type="button" class="btn-sub edit-only" disabled data-i18n="btnUndo">元に戻す</button>
       </div>
     </div>
-    <div id="palette-pop" class="palette-pop edit-only" hidden></div>
-    <p class="edit-hint edit-only" data-i18n="editHint">手直しモードON中だけ、図案をタップ/クリックで塗れます（色はビーズ一覧か「🎨全色」から選択・右クリックでスポイト）。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます。OFFなら通常のスクロール操作</p>
+
+    <!-- 手直しパネル: 手直しモードON中だけ表示。ツール→色の2段構成 -->
+    <div id="edit-panel" class="edit-panel">
+      <div class="ep-row">
+        <button id="tool-pen" type="button" class="btn-sub tool-btn active" data-i18n="toolPen">✎ ペン</button>
+        <button id="tool-fill" type="button" class="btn-sub tool-btn" data-i18n="toolFill">▧ 塗りつぶし</button>
+        <button id="tool-replace" type="button" class="btn-sub tool-btn" data-i18n="toolReplace">⇄ 色置換</button>
+        <button id="btn-pen-erase" type="button" class="btn-sub tool-btn" data-i18n="btnEraser">◻ 消しゴム</button>
+        <span class="ep-size">
+          <span class="tb-label" data-i18n="tbPenSize">太さ</span>
+          <button type="button" class="btn-sub pen-size-btn active" data-size="1">1</button>
+          <button type="button" class="btn-sub pen-size-btn" data-size="2">2</button>
+          <button type="button" class="btn-sub pen-size-btn" data-size="3">3</button>
+        </span>
+        <button id="btn-undo" type="button" class="btn-sub ep-undo" disabled data-i18n="btnUndo">↩ 元に戻す</button>
+      </div>
+      <div class="ep-row">
+        <span class="pen-status"><span data-i18n="penPrefix">ペン:</span> <span id="pen-swatch" class="pen-swatch"></span><span id="pen-label">未選択</span></span>
+        <button id="btn-palette" type="button" class="btn-sub" data-i18n="btnPalette">🎨 全色から選ぶ</button>
+      </div>
+      <div id="palette-pop" class="palette-pop" hidden></div>
+      <p class="edit-hint" data-i18n="editHint">図案をタップ/クリックで塗れます。色はビーズ一覧・🎨全色・右クリック（スポイト）で選択。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます</p>
+    </div>
     </div><!-- /#pattern-pane -->
 
     <div class="dl-row">

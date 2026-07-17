@@ -805,6 +805,16 @@ const chkAspect = $("chk-aspect");
 const selPlate = $("sel-plate");
 const chkOutline = $("chk-outline");
 const chkCleanup = $("chk-cleanup");
+const chkSpecial = $("chk-special");
+
+// 選択シリーズの「実際に配色へ使うパレット」。
+// ラメ・夜光・透明系(sp)は実物の見え方が別物なので、チェックONの時だけ含める
+function activePalette(seriesKey, useSpecial) {
+  const base = PAL[seriesKey] || [];
+  if (useSpecial) return base;
+  const filtered = base.filter((c) => !c.sp);
+  return filtered.length ? filtered : base;
+}
 const chkDither = $("chk-dither");
 const chkWhiteBg = $("chk-whitebg");
 const rngColors = $("rng-colors");
@@ -892,6 +902,8 @@ const I18N = {
   optDither: { ja: "ディザリング（2色を混ぜ打ちして中間色を表現）", en: "Dithering (mixes two colors to fake in-between tones)" },
   optWhitebg: { ja: "背景（白・余白）をビーズなしにする", en: "Remove background (white / margins)" },
   optCleanup: { ja: "仕上げの整形（ノイズ粒・浮きビーズを整理）", en: "Cleanup pass (remove noise & stray beads)" },
+  optSpecial: { ja: "特殊色も使う（ラメ・夜光・透明系。実物の見え方が大きく異なるため通常はOFF推奨）",
+    en: "Use specialty colors (glitter / glow / clear — they look very different in real life, OFF recommended)" },
   lblMaxColors: { ja: "使う色数の上限", en: "Max colors" },
   mcNone: { ja: "制限なし", en: "No limit" },
   mc8: { ja: "8色まで", en: "Up to 8" },
@@ -1193,7 +1205,7 @@ document.querySelectorAll(".chip").forEach((chip) => {
   });
 });
 
-[chkOutline, chkCleanup, chkDither, chkWhiteBg].forEach((el) =>
+[chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg].forEach((el) =>
   el.addEventListener("change", scheduleConvert));
 
 function updateColorsLabel() {
@@ -1262,6 +1274,7 @@ function saveSession() {
       dither: chkDither.checked,
       whitebg: chkWhiteBg.checked,
       cleanup: chkCleanup.checked,
+      special: chkSpecial.checked,
       plate: selPlate.value,
       colorsIdx: +rngColors.value,
       grid: gridToB64(state.grid),
@@ -1291,12 +1304,14 @@ function restoreSession() {
     chkDither.checked = !!s.dither;
     chkWhiteBg.checked = !!s.whitebg;
     chkCleanup.checked = s.cleanup !== false;
+    chkSpecial.checked = !!s.special;
     selPlate.value = s.plate || "0";
     rngColors.value = String(s.colorsIdx == null ? 5 : s.colorsIdx);
     updateColorsLabel();
     if (s.banner) showBanner(s.banner.cls, s.banner.kind, s.banner.params);
-    const palette = PAL[s.series];
-    const grid = s.grid && palette ? b64ToGrid(s.grid, s.W * s.H) : null;
+    // 保存時と同じ特殊色フィルタを適用したパレットで復元（グリッドの色番号が並びに依存するため）
+    const palette = activePalette(s.series, !!s.special);
+    const grid = s.grid && palette.length ? b64ToGrid(s.grid, s.W * s.H) : null;
     if (grid) {
       // 手直しの編集内容ごと復元
       state.grid = grid;
@@ -1433,7 +1448,7 @@ function convert() {
   const W = clampSize(+inpW.value);
   const H = clampSize(+inpH.value);
   const series = currentSeries();
-  const palette = PAL[series.key] || [];
+  const palette = activePalette(series.key, chkSpecial.checked);
   if (!palette.length) return;
 
   // 元画像を作業キャンバスへ

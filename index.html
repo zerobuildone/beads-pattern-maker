@@ -2,6 +2,17 @@
 <html lang="ja" data-lang="ja">
 <head>
 <meta charset="UTF-8">
+<script>
+/* 初回訪問の非日本語ブラウザは英語版へ（言語選択済みユーザーとbotは対象外） */
+(function(){
+  try {
+    if (localStorage.getItem("beads_lang")) return;
+    if (/bot|crawl|spider|slurp|headless|lighthouse|prerender/i.test(navigator.userAgent)) return;
+    if ((navigator.language || "ja").toLowerCase().indexOf("ja") !== 0)
+      location.replace(new URL("en/", location.href));
+  } catch (e) { /* no-op */ }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-L8L3LJ2P45"></script>
@@ -14,6 +25,9 @@
 <title>アイロンビーズ図案メーカー｜写真・画像をドット絵図案に無料変換</title>
 <meta name="description" content="画像をドロップするだけでアイロンビーズの図案に自動変換。パーラービーズ・ナノビーズ・ハマ・Artkal対応。実際に売っている色番号で図案化し、必要な色と個数、購入先まで自動でわかる無料ツール。">
 <link rel="canonical" href="https://zerobuildone.github.io/beads-pattern-maker/">
+<link rel="alternate" hreflang="ja" href="https://zerobuildone.github.io/beads-pattern-maker/">
+<link rel="alternate" hreflang="en" href="https://zerobuildone.github.io/beads-pattern-maker/en/">
+<link rel="alternate" hreflang="x-default" href="https://zerobuildone.github.io/beads-pattern-maker/en/">
 <meta property="og:title" content="アイロンビーズ図案メーカー / Fuse Bead Pattern Maker">
 <meta property="og:description" content="画像をドロップするだけでアイロンビーズ図案に自動変換。色番号・必要個数・購入先まで出力。">
 <meta property="og:type" content="website">
@@ -22,6 +36,8 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:site_name" content="アイロンビーズ図案メーカー">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:locale:alternate" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#fcfbf8">
 <link rel="icon" href="favicon.ico" sizes="32x32">
@@ -46,7 +62,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1784274751">
+<link rel="stylesheet" href="style.css?v=1784277219">
 </head>
 <body>
 <noscript><p style="padding:16px;text-align:center">このツールはブラウザ内で画像を変換するため、JavaScriptを有効にしてご利用ください。/ This tool converts images in your browser and requires JavaScript.</p></noscript>
@@ -272,6 +288,7 @@
           <button type="button" class="btn-sub pen-size-btn" data-size="3">3</button>
         </span>
         <button id="btn-undo" type="button" class="btn-sub ep-undo" disabled data-i18n="btnUndo">↩ 元に戻す</button>
+        <button id="btn-redo" type="button" class="btn-sub" disabled data-i18n="btnRedo">↪ やり直す</button>
       </div>
       <div class="ep-row">
         <span class="pen-status"><span data-i18n="penPrefix">ペン:</span> <span id="pen-swatch" class="pen-swatch"></span><span id="pen-label">未選択</span></span>
@@ -333,8 +350,9 @@
   <p>必要なビーズの色番号・色名・個数は自動で集計され、各色の購入ページへワンクリックで移動できます。図案は座標と色記号つきのPNGとして保存でき、複数プレートで作る大きな作品にはプレート区切り線も表示できます。登録不要・インストール不要で、画像がサーバーに送信されることもありません。詳しくは<a href="guide.html">使い方・FAQ</a>をご覧ください。</p>
 </section>
 <section class="seo-intro lang-en">
-  <h2>Free fuse bead pattern generator</h2>
-  <p>Turn photos, illustrations and pixel art into fuse bead patterns (Perler, Hama, Artkal, Nanobeads) using only colors that are actually sold. Pixel art is auto-detected and reproduced dot-for-dot, and the tool tallies exactly which bead colors and how many you need, with purchase links per color. Free, no signup, and your images never leave the browser. See the <a href="guide.html">guide &amp; FAQ</a> for details.</p>
+  <h2>Free fuse bead pattern generator — turn any photo into a Perler, Hama or Artkal pattern</h2>
+  <p>Fuse Bead Pattern Maker converts photos, illustrations and pixel art into fuse bead patterns automatically. Unlike generic pixelators, it quantizes your image to colors that are actually sold — Perler, Hama (midi/mini), Artkal (5mm and 2.6mm) and Kawada Nanobeads — so the pattern doubles as a shopping list. Pixel art is auto-detected and reproduced dot-for-dot (one pixel = one bead), including AI-generated pixel art with a broken grid.</p>
+  <p>The tool tallies exactly which bead colors and how many of each you need, with purchase links per color, and exports the pattern as a PNG with grid coordinates and color symbols. Large designs get pegboard split lines. Free, no sign-up, no install — and your images are processed entirely in your browser, never uploaded. See the <a href="guide.html">guide &amp; FAQ</a> for details.</p>
 </section>
 
 </main>
@@ -365,8 +383,8 @@
   </div>
 </div>
 
-<script src="palettes.js?v=1784274751"></script>
-<script src="config.js?v=1784274751"></script>
-<script src="app.js?v=1784274751"></script>
+<script src="palettes.js?v=1784277219"></script>
+<script src="config.js?v=1784277219"></script>
+<script src="app.js?v=1784277219"></script>
 </body>
 </html>

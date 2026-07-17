@@ -11,10 +11,14 @@ const PAL = window.BEAD_PALETTES || {};
 
 /* ---------- 言語 ---------- */
 
+/* 既定言語はページ側の <html lang> で決まる（/ = ja、/en/ = en）。
+ * 海外ブラウザの英語版への振り分けは各ページ先頭のリダイレクトスクリプトが行う。
+ * navigator.languageでの描画切替はやめた（Googlebotが米国環境で描画するため、
+ * 日本語トップが英語でインデックスされるのを防ぐ） */
 let LANG = "ja";
 try {
   LANG = localStorage.getItem("beads_lang") ||
-    ((navigator.language || "ja").toLowerCase().startsWith("ja") ? "ja" : "en");
+    ((document.documentElement.lang || "ja").toLowerCase().startsWith("en") ? "en" : "ja");
 } catch (e) { /* localStorage不可の環境でも動かす */ }
 
 /* ---------- 購入リンク生成 ---------- */
@@ -885,6 +889,7 @@ const state = {
   tool: "pen",       // "pen" | "fill"（塗りつぶし）
   penSize: 1,        // ペンの太さ 1/2/3
   undoStack: [],
+  redoStack: [],
   painting: null,
   editLog: new Map(), // 手直しログ: マス番号 -> {c:色コード, rgb} / null=消しゴム
   editW: 0, editH: 0, // ログが有効な図案サイズ（変わったらログは破棄）
@@ -978,6 +983,7 @@ const rngZoom = $("rng-zoom");
 const chkGrid = $("chk-grid");
 const chkSymbols = $("chk-symbols");
 const btnUndo = $("btn-undo");
+const btnRedo = $("btn-redo");
 const penSwatch = $("pen-swatch");
 const penLabel = $("pen-label");
 const legendTable = $("legend-table");
@@ -1078,6 +1084,7 @@ const I18N = {
   penPrefix: { ja: "ペン:", en: "Pen:" },
   btnEraser: { ja: "◻ 消しゴム", en: "◻ Eraser" },
   btnUndo: { ja: "↩ 元に戻す", en: "↩ Undo" },
+  btnRedo: { ja: "↪ やり直す", en: "↪ Redo" },
   editHint: { ja: "図案をタップ/クリックで塗れます。色はビーズ一覧・🎨全色・右クリック（スポイト）で選択。「⇄色置換」はタップした色を図案全体でペンの色に置き換えます",
     en: "Tap/click the pattern to paint. Pick colors from the bead list, the 🎨 palette, or right-click to eyedrop. \"⇄ Replace\" swaps every cell of the tapped color to the pen color" },
   tbEditMode: { ja: "✏ 手直しする", en: "✏ Edit" },
@@ -1674,6 +1681,7 @@ function restoreSession() {
       state.pen = -2;
       state.highlight = -1;
       state.undoStack = [];
+      state.redoStack = [];
       assignSymbols();
       updatePenStatus();
       stepResult.hidden = false;
@@ -1970,7 +1978,9 @@ function convert() {
   state.pen = -2;
   state.highlight = -1;
   state.undoStack = [];
+  state.redoStack = [];
   btnUndo.disabled = true;
+  btnRedo.disabled = true;
   assignSymbols();
   updatePenStatus();
 
@@ -3091,6 +3101,9 @@ function commitPaint() {
     state.undoStack.push(state.painting);
     if (state.undoStack.length > 100) state.undoStack.shift();
     btnUndo.disabled = false;
+    // 新しい編集をしたら「やり直す」履歴は無効になる（標準的なundo/redoの挙動）
+    state.redoStack.length = 0;
+    btnRedo.disabled = true;
     renderLegend();
     saveSession();
   }
@@ -3134,12 +3147,34 @@ btnUndo.addEventListener("click", () => {
   if (!batch) return;
   for (let k = batch.length - 1; k >= 0; k--) {
     const e = batch[k];
+    // やり直し用に「取り消す直前の値」を覚えてから巻き戻す
+    e.cur = state.grid[e.i];
+    e.curLog = state.editLog.has(e.i) ? state.editLog.get(e.i) : undefined;
     state.grid[e.i] = e.old;
     // 手直しログも巻き戻す（undefined=この操作の前は記録が無かった）
     if (e.oldLog === undefined) state.editLog.delete(e.i);
     else state.editLog.set(e.i, e.oldLog);
   }
+  state.redoStack.push(batch);
+  btnRedo.disabled = false;
   btnUndo.disabled = state.undoStack.length === 0;
+  render();
+  renderLegend();
+  saveSession();
+});
+
+btnRedo.addEventListener("click", () => {
+  const batch = state.redoStack.pop();
+  if (!batch) return;
+  for (let k = 0; k < batch.length; k++) {
+    const e = batch[k];
+    state.grid[e.i] = e.cur;
+    if (e.curLog === undefined) state.editLog.delete(e.i);
+    else state.editLog.set(e.i, e.curLog);
+  }
+  state.undoStack.push(batch);
+  btnUndo.disabled = false;
+  btnRedo.disabled = state.redoStack.length === 0;
   render();
   renderLegend();
   saveSession();

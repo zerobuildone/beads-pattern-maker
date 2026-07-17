@@ -338,6 +338,23 @@ function ciede2000(l1, l2, kL) {
 //    一方、肌色などの中明度〜明部はキャラの見た目を決めるので素のΔE00のまま厳密に合わせる
 //  - 無彩色⇔有彩色の取り違えに罰則(全明度域)。黒・グレー・白が色物のマスを吸う事故と、
 //    グレーのマスに色付きビーズが乗る事故の両方向を抑える
+// 肌色域の判定: 人物の顔・肌が取りうる色（明るめの暖色・中彩度）
+function isSkinTone(lab) {
+  const C = Math.hypot(lab[1], lab[2]);
+  if (lab[0] < 55 || C < 8 || C > 35) return false;
+  const h = Math.atan2(lab[2], lab[1]) * 180 / Math.PI;
+  return h >= 25 && h <= 75;
+}
+
+// くすんだ黄土系ビーズ（タン・カーキ・モカ等）: 測色的に肌へ近くても、
+// 顔に乗ると「汚れた肌」に見える色域
+function isMuddyBead(lab) {
+  const C = Math.hypot(lab[1], lab[2]);
+  if (lab[0] >= 80 || C >= 30) return false; // L80以上の明るい暖色は正当な肌ビーズ
+  const h = Math.atan2(lab[2], lab[1]) * 180 / Math.PI;
+  return h > 60 && h < 100;
+}
+
 function beadDist(lab, plab) {
   const lBar = (lab[0] + plab[0]) / 2;
   const kL = 1 + Math.min(1, Math.max(0, (45 - lBar) / 30));
@@ -346,6 +363,9 @@ function beadDist(lab, plab) {
   const cc = Math.hypot(plab[1], plab[2]);
   const lo = Math.min(cs, cc), hi = Math.max(cs, cc);
   if (lo < 6 && hi > 12) d += (hi - 12) * 0.5;
+  // 肌色のマスには黄土系を避ける補正。人は顔には多少色差があっても桃色寄りを選ぶ。
+  // +6に留めることで、本当にタン色の物体（砂・ベージュの服等）は正確一致が勝つ
+  if (isSkinTone(lab) && isMuddyBead(plab)) d += 6;
   return d;
 }
 

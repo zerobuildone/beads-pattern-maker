@@ -803,6 +803,8 @@ const state = {
   penSize: 1,        // ペンの太さ 1/2/3
   undoStack: [],
   painting: null,
+  editLog: new Map(), // 手直しログ: マス番号 -> {c:色コード, rgb} / null=消しゴム
+  editW: 0, editH: 0, // ログが有効な図案サイズ（変わったらログは破棄）
 };
 
 /* ---------- DOM ---------- */
@@ -1171,6 +1173,8 @@ function loadFile(file) {
   const img = new Image();
   img.onload = () => {
     state.img = img;
+    state.editLog.clear(); // 別画像の手直しを持ち越さない
+    state.editW = state.editH = 0;
     srcPreview.src = url;
     srcPreviewWrap.hidden = false;
     dropzone.hidden = true;
@@ -1225,6 +1229,8 @@ $("btn-clear-image").addEventListener("click", () => {
   state.img = null;
   state.imgDataUrl = null;
   state.grid = null;
+  state.editLog.clear();
+  state.editW = state.editH = 0;
   srcPreviewWrap.hidden = true;
   detectBanner.hidden = true;
   lastBanner = null;
@@ -1347,6 +1353,8 @@ function saveSession() {
       plate: selPlate.value,
       colorsIdx: +rngColors.value,
       grid: gridToB64(state.grid),
+      // 手直しログ（[i]=消しゴム / [i,コード,r,g,b]=塗り）。復元後の設定変更でも手直しが残るように
+      edits: [...state.editLog].map(([i, e]) => (e ? [i, e.c, e.rgb[0], e.rgb[1], e.rgb[2]] : [i])),
       banner: lastBanner,
     }));
   } catch (e) { /* 容量超過などは黙って諦める（機能は劣化するが壊れない） */ }
@@ -1384,6 +1392,14 @@ function restoreSession() {
     // 保存時と同じ特殊色フィルタを適用したパレットで復元（グリッドの色番号が並びに依存するため）
     const palette = activePalette(s.series, !!s.special);
     refreshOutlineOptions(palette);
+    state.editLog = new Map();
+    if (Array.isArray(s.edits)) {
+      for (const e of s.edits) {
+        if (e.length >= 5) state.editLog.set(e[0], { c: e[1], rgb: [e[2], e[3], e[4]] });
+        else state.editLog.set(e[0], null);
+      }
+    }
+    state.editW = s.W; state.editH = s.H;
     const grid = s.grid && palette.length ? b64ToGrid(s.grid, s.W * s.H) : null;
     if (grid) {
       // 手直しの編集内容ごと復元
@@ -1658,6 +1674,13 @@ function convert() {
     applyOutline(grid, W, H, selOutlineColor.selectedIndex);
   }
 
+  // 手直しの再適用: 設定を変えて再変換しても、手で塗った/消したマスは維持する。
+  // パイプラインの最後に置くことで、縁取りや整形よりユーザーの修正が常に勝つ。
+  // 図案サイズが変わったときだけ座標の意味が失われるためログを破棄
+  if (state.editW !== W || state.editH !== H) state.editLog.clear();
+  state.editW = W; state.editH = H;
+  reapplyEdits(grid, palette, state.editLog);
+
   state.grid = grid;
   state.W = W; state.H = H;
   state.palette = palette;
@@ -1688,6 +1711,23 @@ function convert() {
     stepResult.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   saveSession();
+}
+
+// 手直しログの再適用。ビーズは色コードでパレットに対応付け、
+// パレットに無い色（ブランド変更後など）は記録時のRGBに最も近い色へフォールバックする
+function reapplyEdits(grid, palette, log) {
+  if (!log || !log.size) return;
+  const codeIdx = new Map();
+  for (let i = 0; i < palette.length; i++) {
+    if (!codeIdx.has(palette[i].c)) codeIdx.set(palette[i].c, i);
+  }
+  for (const [i, e] of log) {
+    if (i < 0 || i >= grid.length) continue;
+    if (!e) { grid[i] = -1; continue; }
+    let idx = codeIdx.get(e.c);
+    if (idx === undefined) idx = nearestIndex(srgbToLab(e.rgb[0], e.rgb[1], e.rgb[2]), palette);
+    grid[i] = idx;
+  }
 }
 
 // 縁取り(アウトライン): ビーズなしマス・図案の外周に接している縁のマスを指定色へ置き換える。
@@ -1855,14 +1895,30 @@ const symOf = (idx) => state.symMap.get(idx) || "?";
 
 function cellSize() { return +rngZoom.value; }
 
-// 透過（ビーズなし）マスの市松模様。白ビーズと一目で区別できるようにする
+// 透過（ビーズなし）マス: 青みがかった下地 + 45°の斜線ハッチ。
+// ビーズのマスは必ずベタ塗りなので、「色」ではなく「模様」で区別する
+// （市松だとグレー系ビーズと見分けがつかなかった）。
+// セル corner-to-corner の斜線は隣接セルとつながって連続ストライプに見える
+let emptyTile = null, emptyTileSize = -1;
+function getEmptyTile(s) {
+  if (emptyTile && emptyTileSize === s) return emptyTile;
+  const t = document.createElement("canvas");
+  t.width = t.height = Math.max(2, Math.ceil(s));
+  const g = t.getContext("2d");
+  g.fillStyle = "#edf3f8";
+  g.fillRect(0, 0, t.width, t.height);
+  g.strokeStyle = "#b9cbdc";
+  g.lineWidth = Math.max(1, s * 0.15);
+  g.beginPath();
+  g.moveTo(-s * 0.3, s * 1.3);
+  g.lineTo(s * 1.3, -s * 0.3);
+  g.stroke();
+  emptyTile = t;
+  emptyTileSize = s;
+  return t;
+}
 function drawEmptyCell(c2, px, py, s) {
-  c2.fillStyle = "#e9e9e9";
-  c2.fillRect(px, py, s, s);
-  const h = s / 2;
-  c2.fillStyle = "#cdcdcd";
-  c2.fillRect(px, py, h, h);
-  c2.fillRect(px + h, py + h, s - h, s - h);
+  c2.drawImage(getEmptyTile(s), px, py);
 }
 
 // 図案を表示領域の横幅にフィットさせる自動ズーム。
@@ -2251,6 +2307,14 @@ function floodIndices(grid, W, H, start) {
   return out;
 }
 
+// 手直しログへ記録: ユーザーが選んだ内容を色コード+RGBで覚える（消しゴムはnull）。
+// palette index ではなくコードで持つことで、再変換・ブランド変更後も対応付けできる
+function logEdit(j, val) {
+  const prev = state.editLog.has(j) ? state.editLog.get(j) : undefined;
+  state.editLog.set(j, val >= 0 ? { c: state.palette[val].c, rgb: state.palette[val].rgb } : null);
+  return prev; // undo用に「記録前の状態」を返す（undefined=未記録だった）
+}
+
 function paintCell(i) {
   if (i < 0 || state.pen === -2) return;
   const val = state.pen === -1 ? -1 : state.pen;
@@ -2265,7 +2329,7 @@ function paintCell(i) {
       if (x < 0 || x >= W || y < 0 || y >= H) continue;
       const j = y * W + x;
       if (state.grid[j] === val) continue;
-      state.painting.push({ i: j, old: state.grid[j] });
+      state.painting.push({ i: j, old: state.grid[j], oldLog: logEdit(j, val) });
       state.grid[j] = val;
       changed = true;
     }
@@ -2280,7 +2344,7 @@ function fillAt(i) {
   if (state.grid[i] === val) return;
   state.painting = [];
   for (const j of floodIndices(state.grid, state.W, state.H, i)) {
-    state.painting.push({ i: j, old: state.grid[j] });
+    state.painting.push({ i: j, old: state.grid[j], oldLog: logEdit(j, val) });
     state.grid[j] = val;
   }
   render();
@@ -2363,7 +2427,13 @@ canvas.addEventListener("contextmenu", (e) => {
 btnUndo.addEventListener("click", () => {
   const batch = state.undoStack.pop();
   if (!batch) return;
-  for (let k = batch.length - 1; k >= 0; k--) state.grid[batch[k].i] = batch[k].old;
+  for (let k = batch.length - 1; k >= 0; k--) {
+    const e = batch[k];
+    state.grid[e.i] = e.old;
+    // 手直しログも巻き戻す（undefined=この操作の前は記録が無かった）
+    if (e.oldLog === undefined) state.editLog.delete(e.i);
+    else state.editLog.set(e.i, e.oldLog);
+  }
   btnUndo.disabled = state.undoStack.length === 0;
   render();
   renderLegend();

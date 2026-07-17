@@ -1927,7 +1927,7 @@ function preserveShading(grid, palette, cellLab, W, H) {
     const mudward = Math.abs(hueDelta(hueOf(palette[mBead].lab), MUD)) < Math.abs(hueDelta(hueOf(mc.lab), MUD));
     if (!mudward) continue;
     // 同族（ソース色相±15°）で反対向きのビーズを持つ「本体」アンカーを探す
-    let anchor = 0, anchorLSum = 0, domBead = -1, domN = 0;
+    let anchor = 0, domBead = -1, domN = 0, domSrcL = 0;
     for (const dc of sizable) {
       if (dc === mc || Math.abs(hueDelta(hueOf(dc.lab), hueOf(mc.lab))) > 15) continue;
       const b = remap.has(dc.k) ? remap.get(dc.k) : dc.bead;
@@ -1935,14 +1935,15 @@ function preserveShading(grid, palette, cellLab, W, H) {
       const off = hueDelta(hueOf(palette[b].lab), hueOf(dc.lab));
       if (off * mOff < 0) {
         anchor += dc.n;
-        anchorLSum += dc.lab[0] * dc.n;
         if (Math.abs(hueDelta(hueOf(palette[b].lab), hueOf(palette[mBead].lab))) >= 25 && dc.n > domN) {
-          domN = dc.n; domBead = b;
+          domN = dc.n; domBead = b; domSrcL = dc.lab[0];
         }
       }
     }
     if (domBead < 0 || anchor < mc.n * 0.5) continue;
-    const darker = mc.lab[0] < anchorLSum / anchor; // 矯正対象が影側かどうか
+    // 影側かどうかは「基準にした本体クラスタ自身」との比較で決める
+    // （アンカー全体の平均だと、同族の暗い段に引きずられて誤判定する）
+    const darker = mc.lab[0] < domSrcL;
     const cur = beadDist(mc.lab, palette[mBead].lab);
     let best = -1, bd = Infinity;
     for (let p = 0; p < palette.length; p++) {

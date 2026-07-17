@@ -434,6 +434,7 @@ body.edit-on .edit-panel { display: block; }
 
 /* 縁取り(アウトライン)の色選択行 */
 .outline-row { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+.outline-row[hidden] { display: none !important; } /* display:flexがhidden属性に勝ってしまう対策 */
 .outline-row select { flex: 1; min-width: 0; max-width: 240px; }
 .outline-swatch {
   width: 18px; height: 18px; flex: none;

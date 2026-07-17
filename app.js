@@ -857,6 +857,7 @@ const chkOutline = $("chk-outline");
 const chkCleanup = $("chk-cleanup");
 const chkSpecial = $("chk-special");
 const chkShading = $("chk-shading");
+const chkDitherMix = $("chk-dithermix");
 const chkAddOutline = $("chk-addoutline");
 const selOutlineColor = $("sel-outline-color");
 const outlineSwatch = $("outline-swatch");
@@ -877,27 +878,35 @@ function activePalette(seriesKey, useSpecial) {
 let outlineCode = null;
 function refreshOutlineOptions(palette) {
   selOutlineColor.innerHTML = "";
-  let sel = -1, black = -1, darkest = 0;
+  // 先頭は「自動（selout）」: その場所の色の同系最暗色で縁取る
+  const auto = document.createElement("option");
+  auto.value = "auto";
+  auto.textContent = T("optOutlineAuto");
+  selOutlineColor.appendChild(auto);
+  let selVal = null, black = -1, darkest = 0;
   for (let i = 0; i < palette.length; i++) {
     const c = palette[i];
     const opt = document.createElement("option");
-    opt.value = c.c;
+    opt.value = String(i);
     opt.textContent = dispName(c);
     opt.dataset.rgb = c.rgb.join(",");
+    opt.dataset.code = c.c;
     selOutlineColor.appendChild(opt);
-    if (sel < 0 && outlineCode != null && c.c === outlineCode) sel = i;
+    if (selVal == null && outlineCode != null && outlineCode !== "auto" && c.c === outlineCode) selVal = String(i);
     if (black < 0 && !c.rgb[0] && !c.rgb[1] && !c.rgb[2]) black = i;
     if (c.lab[0] < palette[darkest].lab[0]) darkest = i;
   }
   if (!palette.length) return;
-  const idx = sel >= 0 ? sel : (black >= 0 ? black : darkest);
-  selOutlineColor.selectedIndex = idx;
-  outlineCode = palette[idx].c;
+  if (outlineCode === "auto") selVal = "auto";
+  if (selVal == null) selVal = String(black >= 0 ? black : darkest);
+  selOutlineColor.value = selVal;
+  outlineCode = selVal === "auto" ? "auto" : palette[+selVal].c;
   updateOutlineSwatch();
 }
 function updateOutlineSwatch() {
   const opt = selOutlineColor.selectedOptions[0];
-  outlineSwatch.style.background = opt ? `rgb(${opt.dataset.rgb})` : "transparent";
+  outlineSwatch.style.background = !opt ? "transparent" :
+    (opt.value === "auto" ? "linear-gradient(135deg,#777,#1a1a1a)" : `rgb(${opt.dataset.rgb})`);
 }
 const chkDither = $("chk-dither");
 const chkWhiteBg = $("chk-whitebg");
@@ -990,6 +999,9 @@ const I18N = {
     en: "Use specialty colors (glitter / glow / clear — they look very different in real life, OFF recommended)" },
   optShading: { ja: "陰影を保持（明暗の段差を同系の別ビーズへ割り振る）",
     en: "Preserve shading (spread tones across similar beads)" },
+  optDitherMix: { ja: "ディザ混色（パレットに無い中間色を2色の市松模様で再現）",
+    en: "Dither mix (fake missing colors with a 2-bead checkerboard)" },
+  optOutlineAuto: { ja: "自動（その場所の色の同系最暗色）", en: "Auto (darkest tone of each area)" },
   optAddOutline: { ja: "図案のふちに縁取りを追加（アウトライン）",
     en: "Add an outline along the pattern edge" },
   optOutlineColor: { ja: "縁取りの色", en: "Outline color" },
@@ -1308,7 +1320,7 @@ document.querySelectorAll(".chip").forEach((chip) => {
   });
 });
 
-[chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg, chkShading].forEach((el) =>
+[chkOutline, chkCleanup, chkSpecial, chkDither, chkWhiteBg, chkShading, chkDitherMix].forEach((el) =>
   el.addEventListener("change", scheduleConvert));
 chkAddOutline.addEventListener("change", () => {
   outlineColorRow.hidden = !chkAddOutline.checked;
@@ -1319,7 +1331,8 @@ chkAddOutline.addEventListener("change", () => {
   scheduleConvert();
 });
 selOutlineColor.addEventListener("change", () => {
-  outlineCode = selOutlineColor.value;
+  const o = selOutlineColor.selectedOptions[0];
+  outlineCode = !o ? null : (o.value === "auto" ? "auto" : o.dataset.code);
   updateOutlineSwatch();
   scheduleConvert();
 });
@@ -1392,6 +1405,7 @@ function saveSession() {
       cleanup: chkCleanup.checked,
       special: chkSpecial.checked,
       shading: chkShading.checked,
+      ditherMix: chkDitherMix.checked,
       addOutline: chkAddOutline.checked,
       outlineColor: outlineCode,
       plate: selPlate.value,
@@ -1428,6 +1442,7 @@ function restoreSession() {
     chkCleanup.checked = s.cleanup !== false;
     chkSpecial.checked = !!s.special;
     chkShading.checked = s.shading !== false;
+    chkDitherMix.checked = !!s.ditherMix;
     chkAddOutline.checked = !!s.addOutline;
     outlineColorRow.hidden = !chkAddOutline.checked;
     if (s.outlineColor) outlineCode = s.outlineColor;
@@ -1722,9 +1737,15 @@ function convert() {
     cleanupPattern(grid, W, H, palette);
   }
 
+  // ディザ混色: パレットに無い中間色を2色の市松で擬似再現（詳細設定・任意ON）
+  if (chkDitherMix.checked && !useDither) {
+    applyDitherMix(grid, palette, cellLabArr, W, H);
+  }
+
   // 縁取り: ビーズなしマス（図案の外周含む）に接する縁のマスをアウトライン色へ置き換える
-  if (chkAddOutline.checked && selOutlineColor.selectedIndex >= 0) {
-    applyOutline(grid, W, H, selOutlineColor.selectedIndex);
+  // （「自動」= selout: その場所の色の同系最暗色で縁取る）
+  if (chkAddOutline.checked && selOutlineColor.value) {
+    applyOutline(grid, W, H, selOutlineColor.value === "auto" ? -1 : +selOutlineColor.value, palette);
   }
 
   // 手直しの再適用: 設定を変えて再変換しても、手で塗った/消したマスは維持する。
@@ -1949,6 +1970,60 @@ function preserveShading(grid, palette, cellLab, W, H) {
   }
 }
 
+// ディザ混色: パレットに存在しない中間色を「近い2色ビーズの市松模様」で擬似再現する。
+// Mr.ドットマン（小野浩）が実機で確立し、EGA時代（Mark Ferrari）に体系化された定石。
+//  - 混色の見え方はガンマ補正した平均で評価する（単純なRGB平均は実際より明るく狂う）
+//  - かけ離れた2色の混合はノイズに見えるため、ペアはΔE00≤24に限定
+//  - 片割れは現在割当てられているビーズに固定 = 色相方針（寒色側の影など）を壊さない
+//  - 市松が模様として読めない小さな領域（8マス未満）は対象外
+function applyDitherMix(grid, palette, cellLab, W, H) {
+  const total = W * H;
+  const clusters = [];
+  const cellCl = new Int16Array(total).fill(-1);
+  for (let i = 0; i < total; i++) {
+    if (grid[i] < 0) continue;
+    const lab = [cellLab[i * 3], cellLab[i * 3 + 1], cellLab[i * 3 + 2]];
+    let hit = -1;
+    for (let k = 0; k < clusters.length; k++) {
+      const cl = clusters[k];
+      if (cl.bead === grid[i] && Math.abs(cl.lab[0] - lab[0]) < 6 && ciede2000(cl.lab, lab) <= 4) { hit = k; break; }
+    }
+    if (hit < 0) {
+      if (clusters.length >= 160) return; // 写真的な連続階調は対象外
+      clusters.push({ lab: lab.slice(), bead: grid[i], n: 0 });
+      hit = clusters.length - 1;
+    }
+    clusters[hit].n++;
+    cellCl[i] = hit;
+  }
+  const lin = (u) => Math.pow(u / 255, 2.2);
+  const delin = (u) => Math.round(Math.pow(u, 1 / 2.2) * 255);
+  for (const cl of clusters) {
+    if (cl.n < 8) continue;
+    const A = palette[cl.bead];
+    const d0 = beadDist(cl.lab, A.lab);
+    let best = -1, bd = d0 - 2; // 2以上の明確な改善がある時だけ混色する
+    for (let p = 0; p < palette.length; p++) {
+      if (p === cl.bead) continue;
+      if (ciede2000(A.lab, palette[p].lab) > 24) continue;
+      const B = palette[p];
+      const mix = srgbToLab(
+        delin((lin(A.rgb[0]) + lin(B.rgb[0])) / 2),
+        delin((lin(A.rgb[1]) + lin(B.rgb[1])) / 2),
+        delin((lin(A.rgb[2]) + lin(B.rgb[2])) / 2));
+      const d = beadDist(cl.lab, mix);
+      if (d < bd) { bd = d; best = p; }
+    }
+    if (best >= 0) cl.mix = best;
+  }
+  for (let i = 0; i < total; i++) {
+    const k = cellCl[i];
+    if (k < 0 || clusters[k].mix === undefined) continue;
+    const x = i % W, y = (i / W) | 0;
+    if ((x + y) & 1) grid[i] = clusters[k].mix;
+  }
+}
+
 // 手直しログの再適用。ビーズは色コードでパレットに対応付け、
 // パレットに無い色（ブランド変更後など）は記録時のRGBに最も近い色へフォールバックする
 function reapplyEdits(grid, palette, log) {
@@ -1966,17 +2041,45 @@ function reapplyEdits(grid, palette, log) {
   }
 }
 
-// 縁取り(アウトライン): ビーズなしマス・図案の外周に接している縁のマスを指定色へ置き換える。
-// 外側に1マス足す方式ではなく縁のマスを置き換える方式なので、プレートサイズからはみ出さない
-function applyOutline(grid, W, H, colorIdx) {
+// 縁取り(アウトライン): ビーズなしマス・図案の外周に接している縁のマスを置き換える。
+// 外側に1マス足す方式ではなく縁のマスを置き換える方式なので、プレートサイズからはみ出さない。
+// colorIdx >= 0 は単色縁取り。colorIdx < 0 は selout（selective outlining）＝
+// 一律の黒でなく「その場所の色の同系の最暗色」で縁取るドット絵の定石（Derek Yu / saint11）
+function applyOutline(grid, W, H, colorIdx, palette) {
   const src = grid.slice();
   const empty = (x, y) => x < 0 || y < 0 || x >= W || y >= H || src[y * W + x] < 0;
+  const cache = new Map();
+  const seloutFor = (v) => {
+    if (cache.has(v)) return cache.get(v);
+    const c = palette[v].lab;
+    const cC = Math.hypot(c[1], c[2]);
+    const hue = Math.atan2(c[2], c[1]) * 180 / Math.PI;
+    let best = -1;
+    for (let p = 0; p < palette.length; p++) {
+      const pl = palette[p].lab;
+      if (pl[0] > c[0] - 6) continue; // 明確に暗い色だけが縁になれる
+      const pC = Math.hypot(pl[1], pl[2]);
+      if (cC >= 8) {
+        if (pC < 8) continue; // 有彩色のマスは同系の有彩色で縁取る
+        let dh = Math.abs(Math.atan2(pl[2], pl[1]) * 180 / Math.PI - hue);
+        if (dh > 180) dh = 360 - dh;
+        if (dh > 30) continue;
+      } else if (pC >= 8) continue; // 無彩色のマスは無彩色で
+      if (best < 0 || pl[0] < palette[best].lab[0]) best = p;
+    }
+    if (best < 0) { // 同系の暗色が無ければ全体の最暗色（多くは黒）
+      best = 0;
+      for (let p = 1; p < palette.length; p++) if (palette[p].lab[0] < palette[best].lab[0]) best = p;
+    }
+    cache.set(v, best);
+    return best;
+  };
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const i = y * W + x;
       if (src[i] < 0) continue;
       if (empty(x - 1, y) || empty(x + 1, y) || empty(x, y - 1) || empty(x, y + 1)) {
-        grid[i] = colorIdx;
+        grid[i] = colorIdx >= 0 ? colorIdx : seloutFor(src[i]);
       }
     }
   }
@@ -1991,9 +2094,18 @@ function applyOutline(grid, W, H, colorIdx) {
 function applyColorLimit(grid, palette, limit, cellLab) {
   const counts = new Map();
   for (const v of grid) if (v >= 0) counts.set(v, (counts.get(v) || 0) + 1);
+  // 職人の定石「ランプの端は絵の骨格」: 使用中の最暗色（締め色）と最明色（ハイライト）は
+  // 数値制限でも最後まで残す。輪郭や光が消えると色数以上に絵が崩れるため
+  // （渋谷員子「グラデ4〜5段+締め色1」/ Pixel Joint tutorial「最暗・最明は複数ランプで共有」）
+  let dk = -1, lt = -1;
+  for (const idx of counts.keys()) {
+    if (dk < 0 || palette[idx].lab[0] < palette[dk].lab[0]) dk = idx;
+    if (lt < 0 || palette[idx].lab[0] > palette[lt].lab[0]) lt = idx;
+  }
   while (counts.size > limit) {
     let vic = -1, vicCost = Infinity, vicNear = -1;
     for (const [idx, cnt] of counts) {
+      if (idx === dk || idx === lt) continue;
       let nd = Infinity, ni = -1;
       for (const other of counts.keys()) {
         if (other === idx) continue;

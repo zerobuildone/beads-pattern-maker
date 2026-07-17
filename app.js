@@ -1858,6 +1858,8 @@ function preserveShading(grid, palette, cellLab, W, H) {
       const near = beadDist(r.lab, palette[nearestIndex(r.lab, palette)].lab);
       return beads.map((p) => {
         const pl = palette[p].lab;
+        // 明度がかけ離れたビーズは段として成立しない（影L46→ミントL90のような飛びを禁止）
+        if (Math.abs(pl[0] - r.lab[0]) > 18) return Infinity;
         // 鮮やかさが大きく違うビーズへの飛び付きは追加コスト（くすんだ髪→ネオン色などの事故防止）
         const d = beadDist(r.lab, pl) + Math.max(0, Math.abs(chromaOf(pl) - rc) - 15) * 0.3;
         return d <= near + CAP ? d * r.n : Infinity;
@@ -1886,6 +1888,58 @@ function preserveShading(grid, palette, cellLab, W, H) {
         usedBeads.add(beads[bj]); // 確保済み: 後続の潰れグループが同じ色へ逃げないように
       }
       if (i > 0) bj = from[i][bj];
+    }
+  }
+  // 色相の向きの整合: ソースの色相がほぼ同じ一族の中で、多数派（本体）と反対方向へ
+  // 色相がズレたビーズになった少数派を、本体と同じ向きの空きビーズへ寄せる。
+  // 例: フシギダネの体=パステルみどり(青側)なのに、くすんだ緑だけよもぎ(黄色側)
+  //     → あおみどりへ。「影のズレは本体と同じ色相方向であるべき」という絵の原則。
+  // 黄色側ズレは「汚れ」、本体と同方向のズレは「陰影」として知覚されるため
+  const hueDelta = (a, b) => { let d = a - b; while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+  const MUD = 95; // オリーブ・黄土の中心色相。ここへ近づく色相ズレは「汚れ」に見える
+  const sizable = clusters.filter((c) => c.n >= minN && chromaOf(c.lab) >= 15 && !isSkinTone(c.lab));
+  for (const mc of sizable) {
+    const mBead = remap.has(mc.k) ? remap.get(mc.k) : mc.bead;
+    const mOff = hueDelta(hueOf(palette[mBead].lab), hueOf(mc.lab));
+    if (Math.abs(mOff) < 12) continue; // ビーズの色相が素直な位置なら何もしない
+    // 矯正するのは「黄土方向へのズレ」だけ。反対向き（影らしい寒色側）のズレは自然
+    const mudward = Math.abs(hueDelta(hueOf(palette[mBead].lab), MUD)) < Math.abs(hueDelta(hueOf(mc.lab), MUD));
+    if (!mudward) continue;
+    // 同族（ソース色相±15°）で反対向きのビーズを持つ「本体」アンカーを探す
+    let anchor = 0, anchorLSum = 0, domBead = -1, domN = 0;
+    for (const dc of sizable) {
+      if (dc === mc || Math.abs(hueDelta(hueOf(dc.lab), hueOf(mc.lab))) > 15) continue;
+      const b = remap.has(dc.k) ? remap.get(dc.k) : dc.bead;
+      if (chromaOf(palette[b].lab) < 12) continue; // 無彩色寄りのビーズは向きの基準にしない
+      const off = hueDelta(hueOf(palette[b].lab), hueOf(dc.lab));
+      if (off * mOff < 0) {
+        anchor += dc.n;
+        anchorLSum += dc.lab[0] * dc.n;
+        if (Math.abs(hueDelta(hueOf(palette[b].lab), hueOf(palette[mBead].lab))) >= 25 && dc.n > domN) {
+          domN = dc.n; domBead = b;
+        }
+      }
+    }
+    if (domBead < 0 || anchor < mc.n * 0.5) continue;
+    const darker = mc.lab[0] < anchorLSum / anchor; // 矯正対象が影側かどうか
+    const cur = beadDist(mc.lab, palette[mBead].lab);
+    let best = -1, bd = Infinity;
+    for (let p = 0; p < palette.length; p++) {
+      // 空きビーズ限定。本体ビーズ自体も除外（合流させると段が消えて塗り分けが失われる）
+      if (usedBeads.has(p)) continue;
+      const pl = palette[p].lab;
+      if (chromaOf(pl) < 15) continue;
+      if (Math.abs(pl[0] - mc.lab[0]) > 18) continue; // 明度がかけ離れた矯正はしない
+      const off = hueDelta(hueOf(pl), hueOf(mc.lab));
+      if (off * mOff >= 0 || Math.abs(off) > 45) continue; // 本体と同じ向き・行き過ぎは除外
+      // 影が本体より明るく（明部が本体より暗く）ならないように
+      if (darker ? pl[0] > palette[domBead].lab[0] + 2 : pl[0] < palette[domBead].lab[0] - 2) continue;
+      const d = beadDist(mc.lab, pl);
+      if (d < bd) { bd = d; best = p; }
+    }
+    if (best >= 0 && bd <= cur + 20) {
+      remap.set(mc.k, best);
+      usedBeads.add(best);
     }
   }
   if (!remap.size) return;

@@ -14,6 +14,9 @@
 <title>使い方・FAQ｜アイロンビーズ図案メーカー</title>
 <meta name="description" content="アイロンビーズ図案メーカーの使い方、ブランド混合の注意点、よくある質問。パーラービーズ・ハマビーズ・Artkal・ナノビーズ対応の無料図案変換ツール。">
 <link rel="canonical" href="https://zerobuildone.github.io/beads-pattern-maker/guide.html">
+<link rel="alternate" hreflang="ja" href="https://zerobuildone.github.io/beads-pattern-maker/guide.html">
+<link rel="alternate" hreflang="en" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html">
+<link rel="alternate" hreflang="x-default" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html">
 <meta property="og:title" content="使い方・FAQ｜アイロンビーズ図案メーカー">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://zerobuildone.github.io/beads-pattern-maker/guide.html">
@@ -41,7 +44,7 @@
  ]
 }
 </script>
-<link rel="stylesheet" href="style.css?v=1784277407">
+<link rel="stylesheet" href="style.css?v=1784520482">
 </head>
 <body class="guide-page">
 
@@ -110,7 +113,7 @@
       <li><strong>Drop an image</strong> — pixel art is auto-detected and converted instantly with optimal settings, 1 dot = 1 bead.</li>
       <li><strong>Pick beads &amp; size</strong> — patterns use only colors actually sold by the brand you choose.</li>
       <li><strong>Save the pattern and buy beads</strong> — color codes and counts are tallied with purchase links per color.</li>
-    </ul>
+    </ol>
     <p>Open "Advanced settings" for manual control (image type, color limit, dithering, outlines, pegboard dividers). <strong>The default design goal is that you never need to.</strong></p>
 
     <h2 id="mixing-en">About brand mixing mode</h2>
@@ -131,6 +134,10 @@
       <dd>A. Auto settings handle most cases; in Advanced, limit colors to 8–16 for crisper results. For photos use Photo type + dithering.</dd>
       <dt>Q. Do colors match real beads?</dt>
       <dd>A. Data is based on measured values; monitors and bead lots vary. Nanobeads colors are approximated from product photos.</dd>
+      <dt>Q. Where can I buy the beads?</dt>
+      <dd>A. Perler and Hama are easy to find on Amazon and in craft stores. Artkal ships worldwide from its official store. The purchase links next to each color in the pattern take you straight to the right search.</dd>
+      <dt>Q. Can I use the patterns commercially?</dt>
+      <dd>A. The converted pattern is yours to use freely — just mind the copyright of the source image. Keep character art for personal use.</dd>
     </dl>
   </section>
 
@@ -153,21 +160,22 @@
 
 <script>
 (function () {
-  var L = "ja";
+  /* このページは常に日本語表示。英語利用者（English選択済み、または初回訪問の
+   * 非日本語ブラウザ）は英語版 en/guide.html へ。botは対象外（日本語のままクロールさせる） */
   try {
-    /* botはnavigator判定させない（Googlebotは米国環境で描画するため、日本語既定を維持） */
     var isBot = /bot|crawl|spider|slurp|headless|lighthouse|prerender/i.test(navigator.userAgent);
-    L = localStorage.getItem("beads_lang") ||
-      (isBot ? "ja" :
-        ((navigator.language || "ja").toLowerCase().indexOf("ja") === 0 ? "ja" : "en"));
+    var pref = localStorage.getItem("beads_lang");
+    if (!isBot && (pref === "en" ||
+        (!pref && (navigator.language || "ja").toLowerCase().indexOf("ja") !== 0))) {
+      location.replace("en/guide.html");
+      return;
+    }
   } catch (e) { /* no-op */ }
-  document.documentElement.dataset.lang = L;
-  document.documentElement.lang = L;
   document.querySelectorAll("[data-lang-btn]").forEach(function (b) {
-    b.classList.toggle("active", b.dataset.langBtn === L);
+    b.classList.toggle("active", b.dataset.langBtn === "ja");
     b.addEventListener("click", function () {
       try { localStorage.setItem("beads_lang", b.dataset.langBtn); } catch (e) { /* no-op */ }
-      location.reload();
+      if (b.dataset.langBtn === "en") location.href = "en/guide.html";
     });
   });
 })();

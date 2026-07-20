@@ -16,6 +16,16 @@
   </url>
   <url>
     <loc>https://zerobuildone.github.io/beads-pattern-maker/guide.html</loc>
-    <lastmod>2026-07-16</lastmod><changefreq>monthly</changefreq><priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://zerobuildone.github.io/beads-pattern-maker/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html"/>
+    <lastmod>2026-07-17</lastmod><changefreq>monthly</changefreq><priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://zerobuildone.github.io/beads-pattern-maker/en/guide.html</loc>
+    <xhtml:link rel="alternate" hreflang="ja" href="https://zerobuildone.github.io/beads-pattern-maker/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://zerobuildone.github.io/beads-pattern-maker/en/guide.html"/>
+    <lastmod>2026-07-17</lastmod><changefreq>monthly</changefreq><priority>0.5</priority>
   </url>
 </urlset>
